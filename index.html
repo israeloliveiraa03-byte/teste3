@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Observatório da Educação Escolar Quilombola</title>
+    <title>Nucleo de dados da REDE de Confluência CONAQ</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Leaflet para o mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -128,6 +131,31 @@
             text-align: center;
         }
         canvas { max-height: 340px; width: 100%; }
+        .map-card {
+            background: white;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .map-container {
+            height: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        .map-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        .map-filters .filter-group {
+            min-width: 120px;
+        }
         .inference-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -215,6 +243,19 @@
             .filter-group { min-width: 100%; }
             body { padding: 10px; }
         }
+        .info-legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            font-size: 0.7rem;
+            z-index: 1000;
+        }
+        .info-legend h4 { margin-bottom: 5px; font-size: 0.75rem; }
+        .legend-color { width: 20px; height: 20px; display: inline-block; margin-right: 5px; border-radius: 3px; }
     </style>
 </head>
 <body>
@@ -223,6 +264,7 @@
 <div class="sidebar">
     <h2>📚 Observatório</h2>
     <a href="#visao-geral">📊 Visão Geral</a>
+    <a href="#mapa">🗺️ Mapa Interativo</a>
     <a href="#perfil">🌎 Perfil dos Territórios</a>
     <a href="#politicas">📜 Políticas e Documentos</a>
     <a href="#fechamento">🏚️ Fechamento de Escolas</a>
@@ -257,6 +299,22 @@
     <div id="visao-geral"><h2 class="section-title">📊 Visão Geral</h2>
         <div class="module-description">Indicadores consolidados da pesquisa sobre Educação Escolar Quilombola.</div>
         <div class="kpi-grid" id="kpiArea"></div>
+    </div>
+
+    <!-- ==================== MAPA INTERATIVO ==================== -->
+    <div id="mapa">
+        <h2 class="section-title">🗺️ Mapa Interativo por Estado</h2>
+        <div class="module-description">Visualize os indicadores de Educação Escolar Quilombola por estado. Passe o mouse sobre os estados para ver os números.</div>
+        <div class="map-card">
+            <div class="map-filters">
+                <div class="filter-group"><label>🎓 Filtro por Ensino Médio</label><select id="mapFilterEM"><option value="all">Todos</option><option value="Sim">Com oferta de EM</option><option value="Não">Sem oferta de EM</option></select></div>
+                <div class="filter-group"><label>📉 Filtro por Evasão</label><select id="mapFilterEvasao"><option value="all">Todos</option><option value="Sim">Com evasão</option><option value="Não">Sem evasão</option></select></div>
+                <div class="filter-group"><label>⚠️ Filtro por Racismo</label><select id="mapFilterRacismo"><option value="all">Todos</option><option value="Sim">Com relatos</option><option value="Não">Sem relatos</option></select></div>
+                <div class="filter-group"><button class="reset-btn" id="resetMapFilters">Resetar mapa</button></div>
+            </div>
+            <div id="map" class="map-container" style="height: 500px;"></div>
+            <div class="chart-note">📌 Cada estado exibe um indicador combinado (quanto maior o percentual, mais escuro o tom). Clique em resetar para limpar os filtros do mapa.</div>
+        </div>
     </div>
 
     <div id="perfil"><h2 class="section-title">🌎 Perfil dos Territórios e Informantes</h2>
@@ -351,7 +409,7 @@
         <div class="table-wrapper">
             <table id="dadosTable">
                 <thead><tr><th>Comunidade</th><th>UF</th><th>Perfil do informante</th><th>Relato de racismo/fechamento</th><th>Sugestões de melhoria</th></tr></thead>
-                <tbody><tr><td colspan="5">Carregando......</tr></tbody>
+                <tbody><tr><td colspan="5">Carregando......</tbody>
             </table>
         </div>
     </div>
@@ -361,7 +419,6 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
     Chart.register(ChartDataLabels);
     
@@ -370,6 +427,8 @@
     
     let rawData = [], filteredData = [], allSchools = [];
     let charts = {};
+    let map = null;
+    let ufStats = {};
 
     // DOM elements
     const filterRegiao = document.getElementById('filterRegiao');
@@ -381,12 +440,17 @@
     const exportCSVBtn = document.getElementById('exportCSVBtn');
     const errorContainer = document.getElementById('errorContainer');
     const updateInfo = document.getElementById('updateInfo');
+    
+    // Filtros do mapa
+    const mapFilterEM = document.getElementById('mapFilterEM');
+    const mapFilterEvasao = document.getElementById('mapFilterEvasao');
+    const mapFilterRacismo = document.getElementById('mapFilterRacismo');
+    const resetMapFilters = document.getElementById('resetMapFilters');
 
     // ==================== FUNÇÕES AUXILIARES ====================
     
     function getSafe(row, key) { 
         if (!row) return "";
-        // Tenta encontrar a chave exata ou com pequenas variações
         for (let k in row) {
             if (k === key || k === key.trim()) return row[k].toString().trim();
             if (k.replace(/\n/g, " ").replace(/\s+/g, " ").trim() === key.replace(/\n/g, " ").replace(/\s+/g, " ").trim()) 
@@ -426,9 +490,8 @@
     
     function getPerfilInformante(row) {
         let val = getSafe(row, "3. Qual é a função ou o papel da pessoa informante na comunidade ou no território quilombola?");
-        if (!val) val = getSafe(row, "Função do informante");
         if (!val) return "Não informado";
-        return val.split(",")[0].trim(); // Pega o primeiro papel se houver múltiplos
+        return val.split(",")[0].trim();
     }
     
     function getRacismo(row) {
@@ -503,13 +566,11 @@
     }
     
     function getValorByNumero(row, baseName, numero) {
-        // Tenta encontrar o valor para uma escola específica (1 a 5)
         let sufixos = ["", ` ${numero}`, ` 2`, ` 3`, ` 4`, ` 5`];
         for (let suf of sufixos) {
             let val = getSafe(row, baseName + suf);
             if (val && val !== "") return val;
         }
-        // Tenta com o nome da coluna contendo o número no formato "2" ou " 2"
         for (let key in row) {
             if (key && (key.includes(baseName.substring(0, 30)) || baseName.includes(key.substring(0, 30)))) {
                 if (key.includes(` ${numero}`) || key.includes(`${numero}`)) {
@@ -529,7 +590,6 @@
                 let school = {
                     nome: nome,
                     localizacao: getValorByNumero(row, "Qual a localização desta escola?", i),
-                    // Infraestrutura
                     salaAula: getValorByNumero(row, "\"Esta escola possui infraestrutura adequada? Avalie os seguintes itens:\nMelhorar escala [Salas de aula]\"", i),
                     biblioteca: getValorByNumero(row, "\"Esta escola possui infraestrutura adequada? Avalie os seguintes itens:\nMelhorar escala [Biblioteca]\"", i),
                     laboratorio: getValorByNumero(row, "\"Esta escola possui infraestrutura adequada? Avalie os seguintes itens:\nMelhorar escala [Laboratório de informática]\"", i),
@@ -540,7 +600,6 @@
                     cozinha: getValorByNumero(row, "\"Esta escola possui infraestrutura adequada? Avalie os seguintes itens:\nMelhorar escala [Cozinha]\"", i),
                     agua: getValorByNumero(row, "\"Esta escola possui infraestrutura adequada? Avalie os seguintes itens:\nMelhorar escala [Abastecimento de água potável]\"", i),
                     acessibilidade: getValorByNumero(row, "\"Esta escola possui infraestrutura adequada? Avalie os seguintes itens:\nMelhorar escala [Acessibilidade arquitetônica]\"", i),
-                    // Transporte
                     transporteSeguro: getValorByNumero(row, "Caso tenham estudantes que façam uso de transporte escolar, quais as condições desse transporte? [O transporte é seguro e confortável]", i),
                     transporteVeiculo: getValorByNumero(row, "Caso tenham estudantes que façam uso de transporte escolar, quais as condições desse transporte? [O veículo está em bom estado de conservação.]", i),
                     transporteEstradas: getValorByNumero(row, "Caso tenham estudantes que façam uso de transporte escolar, quais as condições desse transporte? [As estradas estão em boas condições.]", i),
@@ -549,7 +608,6 @@
                     transportePermanencia: getValorByNumero(row, "Caso tenham estudantes que façam uso de transporte escolar, quais as condições desse transporte? [O tempo de permanência dentro do veículo é adequado.]", i),
                     transporteTratamento: getValorByNumero(row, "Caso tenham estudantes que façam uso de transporte escolar, quais as condições desse transporte? [O tratamento dado pelos prestadores de serviço é adequado.]", i),
                     transporteMotorista: getValorByNumero(row, "Caso tenham estudantes que façam uso de transporte escolar, quais as condições desse transporte? [Os(as) motoristas são habilitados e capacitados para a função.]", i),
-                    // Alimentação
                     alimentacaoOferta: getValorByNumero(row, "Sobre a Alimentação Escolar, analise as afirmações abaixo: [Há oferta regular de alimentação escolar quilombola.]", i),
                     alimentacaoQuantidade: getValorByNumero(row, "Sobre a Alimentação Escolar, analise as afirmações abaixo: [A oferta é feita em quantidade adequada.]", i),
                     alimentacaoOrganicos: getValorByNumero(row, "Sobre a Alimentação Escolar, analise as afirmações abaixo: [Prioriza alimentos orgânicos e agroecológicos.]", i),
@@ -577,14 +635,6 @@
     
     function isInfraPrecaria(val) {
         return val && (val.toLowerCase().includes("precária") || val.toLowerCase().includes("insuficiente") || val.toLowerCase().includes("inexistente"));
-    }
-    
-    function isRespostaPositiva(val, tipo) {
-        if (!val) return false;
-        let v = val.toLowerCase();
-        if (tipo === 'alimentacao') return v.includes("concordo totalmente") || v.includes("concordo parcialmente");
-        if (tipo === 'participacao') return v.includes("sim") || v.includes("às vezes");
-        return false;
     }
 
     function loadData() {
@@ -620,6 +670,116 @@
             let schools = extractSchools(row);
             allSchools.push(...schools);
         }
+        calculateUFStats();
+        updateMap();
+    }
+    
+    function calculateUFStats() {
+        ufStats = {};
+        for (let school of allSchools) {
+            let uf = school.uf;
+            if (!uf || uf === "Não informado") continue;
+            if (!ufStats[uf]) {
+                ufStats[uf] = {
+                    total: 0,
+                    comEM: 0,
+                    comEvasao: 0,
+                    comRacismo: 0
+                };
+            }
+            ufStats[uf].total++;
+            if (school.ofertaEM === "Sim") ufStats[uf].comEM++;
+            if (school.evasao === "Sim") ufStats[uf].comEvasao++;
+            if (school.racismo === "Sim") ufStats[uf].comRacismo++;
+        }
+    }
+    
+    function updateMap() {
+        if (!map) return;
+        
+        let emFilter = mapFilterEM.value;
+        let evasaoFilter = mapFilterEvasao.value;
+        let racismoFilter = mapFilterRacismo.value;
+        
+        // Calcular indicador combinado para cada estado
+        let ufIndicator = {};
+        for (let [uf, stats] of Object.entries(ufStats)) {
+            let indicador = 0;
+            let divisor = 0;
+            
+            if (emFilter === "all") {
+                indicador += stats.comEM;
+                divisor += stats.total;
+            } else if (emFilter === "Sim") {
+                indicador += stats.comEM;
+                divisor += stats.comEM;
+            } else {
+                indicador += (stats.total - stats.comEM);
+                divisor += (stats.total - stats.comEM);
+            }
+            
+            if (evasaoFilter === "all") {
+                indicador += stats.comEvasao;
+                divisor += stats.total;
+            } else if (evasaoFilter === "Sim") {
+                indicador += stats.comEvasao;
+                divisor += stats.comEvasao;
+            } else {
+                indicador += (stats.total - stats.comEvasao);
+                divisor += (stats.total - stats.comEvasao);
+            }
+            
+            if (racismoFilter === "all") {
+                indicador += stats.comRacismo;
+                divisor += stats.total;
+            } else if (racismoFilter === "Sim") {
+                indicador += stats.comRacismo;
+                divisor += stats.comRacismo;
+            } else {
+                indicador += (stats.total - stats.comRacismo);
+                divisor += (stats.total - stats.comRacismo);
+            }
+            
+            ufIndicator[uf] = divisor > 0 ? (indicador / divisor * 100) : 0;
+        }
+        
+        // Atualizar cores dos estados
+        fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson')
+            .then(response => response.json())
+            .then(data => {
+                map.eachLayer(layer => {
+                    if (!!layer.feature) map.removeLayer(layer);
+                });
+                
+                let geoJson = L.geoJSON(data, {
+                    style: function(feature) {
+                        let uf = feature.properties.sigla;
+                        let value = ufIndicator[uf] || 0;
+                        let intensity = Math.min(0.8, 0.2 + (value / 100) * 0.6);
+                        return {
+                            fillColor: '#e67e22',
+                            weight: 1,
+                            opacity: 1,
+                            color: 'white',
+                            fillOpacity: intensity
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        let uf = feature.properties.sigla;
+                        let stats = ufStats[uf] || { total: 0, comEM: 0, comEvasao: 0, comRacismo: 0 };
+                        let percEM = stats.total ? (stats.comEM / stats.total * 100).toFixed(1) : 0;
+                        let percEvasao = stats.total ? (stats.comEvasao / stats.total * 100).toFixed(1) : 0;
+                        let percRacismo = stats.total ? (stats.comRacismo / stats.total * 100).toFixed(1) : 0;
+                        
+                        layer.bindTooltip(`
+                            <strong>${feature.properties.nome} (${uf})</strong><br>
+                            🎓 Ensino Médio: ${percEM}% (${stats.comEM}/${stats.total})<br>
+                            📉 Evasão: ${percEvasao}% (${stats.comEvasao}/${stats.total})<br>
+                            ⚠️ Racismo: ${percRacismo}% (${stats.comRacismo}/${stats.total})
+                        `, { sticky: true });
+                    }
+                }).addTo(map);
+            });
     }
     
     function applyFilters() {
@@ -667,14 +827,8 @@
         if(!ctx) return;
         let total = Object.values(dataObj).reduce((a,b)=>a+b,0);
         let percentData = {};
-        for(let [k,v] of Object.entries(dataObj)) {
-            percentData[k] = total ? (v/total*100).toFixed(1) : 0;
-        }
-        charts[id] = new Chart(ctx, { 
-            type: 'bar', 
-            data: { labels: Object.keys(percentData), datasets: [{ data: Object.values(percentData), backgroundColor: color, label: '%' }] }, 
-            options: { responsive: true, maintainAspectRatio: true, scales: { y: { max: 100, title: { display: true, text: 'Porcentagem (%)' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }, datalabels: { anchor: 'end', align: 'top', formatter: (v) => `${v}%`, font: { weight: 'bold' } } } }
-        });
+        for(let [k,v] of Object.entries(dataObj)) { percentData[k] = total ? (v/total*100).toFixed(1) : 0; }
+        charts[id] = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(percentData), datasets: [{ data: Object.values(percentData), backgroundColor: color, label: '%' }] }, options: { responsive: true, maintainAspectRatio: true, scales: { y: { max: 100, title: { display: true, text: 'Porcentagem (%)' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }, datalabels: { anchor: 'end', align: 'top', formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } });
     }
     
     function buildPercentHorizontalChart(id, dataObj, color='#e67e22') {
@@ -683,14 +837,8 @@
         if(!ctx) return;
         let total = Object.values(dataObj).reduce((a,b)=>a+b,0);
         let percentData = {};
-        for(let [k,v] of Object.entries(dataObj)) {
-            percentData[k] = total ? (v/total*100).toFixed(1) : 0;
-        }
-        charts[id] = new Chart(ctx, { 
-            type: 'bar', 
-            data: { labels: Object.keys(percentData), datasets: [{ data: Object.values(percentData), backgroundColor: color }] }, 
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: true, scales: { x: { max: 100, title: { display: true, text: 'Porcentagem (%)' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }, datalabels: { anchor: 'end', align: 'right', formatter: (v) => `${v}%`, font: { weight: 'bold' } } } }
-        });
+        for(let [k,v] of Object.entries(dataObj)) { percentData[k] = total ? (v/total*100).toFixed(1) : 0; }
+        charts[id] = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(percentData), datasets: [{ data: Object.values(percentData), backgroundColor: color }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: true, scales: { x: { max: 100, title: { display: true, text: 'Porcentagem (%)' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }, datalabels: { anchor: 'end', align: 'right', formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } });
     }
     
     function buildPercentPieChart(id, dataObj) {
@@ -699,112 +847,56 @@
         if(!ctx) return;
         let total = Object.values(dataObj).reduce((a,b)=>a+b,0);
         let percentData = {};
-        for(let [k,v] of Object.entries(dataObj)) {
-            percentData[k] = total ? (v/total*100).toFixed(1) : 0;
-        }
-        charts[id] = new Chart(ctx, { 
-            type: 'pie', 
-            data: { labels: Object.keys(percentData), datasets: [{ data: Object.values(percentData) }] }, 
-            options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}%` } }, datalabels: { formatter: (v) => `${v}%`, font: { weight: 'bold' } } } }
-        });
+        for(let [k,v] of Object.entries(dataObj)) { percentData[k] = total ? (v/total*100).toFixed(1) : 0; }
+        charts[id] = new Chart(ctx, { type: 'pie', data: { labels: Object.keys(percentData), datasets: [{ data: Object.values(percentData) }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}%` } }, datalabels: { formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } });
     }
     
     function updateAllCharts() {
-        // REGIÃO
-        let regCount = {};
-        filteredData.forEach(r=>{ let reg=getRegiao(r); regCount[reg]=(regCount[reg]||0)+1; });
+        let regCount = {}; filteredData.forEach(r=>{ let reg=getRegiao(r); regCount[reg]=(regCount[reg]||0)+1; });
         buildPercentBarChart('chartRegiao', regCount, '#3498db');
         
-        // UF
-        let ufCount = {};
-        filteredData.forEach(r=>{ let uf=getUF(r); if(uf!=="Não informado") ufCount[uf]=(ufCount[uf]||0)+1; });
+        let ufCount = {}; filteredData.forEach(r=>{ let uf=getUF(r); if(uf!=="Não informado") ufCount[uf]=(ufCount[uf]||0)+1; });
         buildPercentHorizontalChart('chartUF', ufCount, '#3498db');
         
-        // PERFIL DO INFORMANTE
-        let perfilCount = {};
-        filteredData.forEach(r=>{ let p=getPerfilInformante(r); if(p!=="Não informado") perfilCount[p]=(perfilCount[p]||0)+1; });
+        let perfilCount = {}; filteredData.forEach(r=>{ let p=getPerfilInformante(r); if(p!=="Não informado") perfilCount[p]=(perfilCount[p]||0)+1; });
         buildPercentPieChart('chartPerfilInformante', perfilCount);
         
-        // FAMÍLIAS
-        let famCount = {};
-        filteredData.forEach(r=>{ let f=getFamilias(r); famCount[f]=(famCount[f]||0)+1; });
+        let famCount = {}; filteredData.forEach(r=>{ let f=getFamilias(r); famCount[f]=(famCount[f]||0)+1; });
         buildPercentBarChart('chartFamilias', famCount, '#27ae60');
         
-        // DIRETRIZES
-        let dirCount = {};
-        filteredData.forEach(r=>{ let d=getDiretrizes(r); dirCount[d]=(dirCount[d]||0)+1; });
+        let dirCount = {}; filteredData.forEach(r=>{ let d=getDiretrizes(r); dirCount[d]=(dirCount[d]||0)+1; });
         buildPercentPieChart('chartDiretrizes', dirCount);
         
-        // CONCURSO
-        let concCount = {};
-        filteredData.forEach(r=>{ let c=getConcurso(r); concCount[c]=(concCount[c]||0)+1; });
+        let concCount = {}; filteredData.forEach(r=>{ let c=getConcurso(r); concCount[c]=(concCount[c]||0)+1; });
         buildPercentPieChart('chartConcurso', concCount);
         
-        // FECHAMENTO
-        let fechCount = {};
-        filteredData.forEach(r=>{ let f=getFechamento(r); fechCount[f]=(fechCount[f]||0)+1; });
+        let fechCount = {}; filteredData.forEach(r=>{ let f=getFechamento(r); fechCount[f]=(fechCount[f]||0)+1; });
         buildPercentPieChart('chartFechamentoGeral', fechCount);
         
-        // IMPACTOS
         let impactos = { "Queda aprendizagem":0, "Cansaço extremo":0, "Risco no trajeto":0, "Aumento racismo":0, "Perda vínculo":0, "Aumento custos":0 };
-        filteredData.forEach(r=>{
-            let imp = getSafe(r,"15. Quais os impactos percebidos após fechamento/nucleação da escola?");
-            if(imp.includes("Queda")) impactos["Queda aprendizagem"]++;
-            if(imp.includes("Cansaço")) impactos["Cansaço extremo"]++;
-            if(imp.includes("Risco")) impactos["Risco no trajeto"]++;
-            if(imp.includes("racismo")) impactos["Aumento racismo"]++;
-            if(imp.includes("vínculo")) impactos["Perda vínculo"]++;
-            if(imp.includes("custo")) impactos["Aumento custos"]++;
-        });
+        filteredData.forEach(r=>{ let imp=getSafe(r,"15. Quais os impactos percebidos após fechamento/nucleação da escola?"); if(imp.includes("Queda")) impactos["Queda aprendizagem"]++; if(imp.includes("Cansaço")) impactos["Cansaço extremo"]++; if(imp.includes("Risco")) impactos["Risco no trajeto"]++; if(imp.includes("racismo")) impactos["Aumento racismo"]++; if(imp.includes("vínculo")) impactos["Perda vínculo"]++; if(imp.includes("custo")) impactos["Aumento custos"]++; });
         buildPercentHorizontalChart('chartImpactos', impactos, '#e74c3c');
         
-        // DEMANDA REABERTURA
-        let demCount = {};
-        filteredData.forEach(r=>{ let d=getSafe(r,"16. Existe demanda comunitária por reabertura/retorno de turmas no território?"); if(d && d!=="Não se aplica") demCount[d]=(demCount[d]||0)+1; });
+        let demCount = {}; filteredData.forEach(r=>{ let d=getSafe(r,"16. Existe demanda comunitária por reabertura/retorno de turmas no território?"); if(d && d!=="Não se aplica") demCount[d]=(demCount[d]||0)+1; });
         buildPercentPieChart('chartDemandaReabertura', demCount);
         
-        // ÓRGÃOS EXTERNOS
-        let orgCount = {};
-        filteredData.forEach(r=>{ let o=getSafe(r,"17. A comunidade já precisou acionar órgãos externos?"); if(o) orgCount[o]=(orgCount[o]||0)+1; });
+        let orgCount = {}; filteredData.forEach(r=>{ let o=getSafe(r,"17. A comunidade já precisou acionar órgãos externos?"); if(o) orgCount[o]=(orgCount[o]||0)+1; });
         buildPercentPieChart('chartOrgaosExternos', orgCount);
         
-        // OFERTA EM
-        let emCount = {};
-        filteredData.forEach(r=>{ let o=getOfertaEM(r); emCount[o]=(emCount[o]||0)+1; });
+        let emCount = {}; filteredData.forEach(r=>{ let o=getOfertaEM(r); emCount[o]=(emCount[o]||0)+1; });
         buildPercentPieChart('chartOfertaEM', emCount);
         
-        // EVASÃO
-        let evCount = {};
-        filteredData.forEach(r=>{ let e=getEvasao(r); evCount[e]=(evCount[e]||0)+1; });
+        let evCount = {}; filteredData.forEach(r=>{ let e=getEvasao(r); evCount[e]=(evCount[e]||0)+1; });
         buildPercentPieChart('chartEvasaoEM', evCount);
         
-        // MOTIVOS EVASÃO
         let motivos = { "Distância/transporte":0, "Racismo":0, "Trabalho":0, "Falta apoio financeiro":0, "Violência":0, "Gravidez":0 };
-        filteredData.forEach(r=>{
-            let m = getSafe(r,"21. Principais motivos para interrupção dos estudos no Ensino Médio (se houver)");
-            if(m.includes("Distância")) motivos["Distância/transporte"]++;
-            if(m.includes("Racismo")) motivos["Racismo"]++;
-            if(m.includes("Trabalho")) motivos["Trabalho"]++;
-            if(m.includes("financeiro")) motivos["Falta apoio financeiro"]++;
-            if(m.includes("Violência")) motivos["Violência"]++;
-            if(m.includes("Gravidez")) motivos["Gravidez"]++;
-        });
+        filteredData.forEach(r=>{ let m=getSafe(r,"21. Principais motivos para interrupção dos estudos no Ensino Médio (se houver)"); if(m.includes("Distância")) motivos["Distância/transporte"]++; if(m.includes("Racismo")) motivos["Racismo"]++; if(m.includes("Trabalho")) motivos["Trabalho"]++; if(m.includes("financeiro")) motivos["Falta apoio financeiro"]++; if(m.includes("Violência")) motivos["Violência"]++; if(m.includes("Gravidez")) motivos["Gravidez"]++; });
         buildPercentHorizontalChart('chartMotivosEvasao', motivos, '#e67e22');
         
-        // INFRAESTRUTURA - CATEGORIAS AGREGADAS
-        let categorias = {
-            "Estrutura básica": 0,
-            "Pedagógico/tecnológico": 0,
-            "Conforto/higiene": 0,
-            "Cultura/lazer": 0,
-            "Acessibilidade": 0
-        };
-        let itensDetalhados = {
-            "Salas de aula": 0, "Biblioteca": 0, "Laboratório informática": 0, "Internet": 0,
-            "Espaço cultural": 0, "Espaço esportivo": 0, "Refeitório": 0, "Cozinha": 0,
-            "Água potável": 0, "Acessibilidade": 0
-        };
-        
+        // INFRAESTRUTURA
+        let categorias = { "Estrutura básica":0, "Pedagógico/tecnológico":0, "Conforto/higiene":0, "Cultura/lazer":0, "Acessibilidade":0 };
+        let itensDetalhados = { "Salas de aula":0, "Biblioteca":0, "Laboratório informática":0, "Internet":0, "Espaço cultural":0, "Espaço esportivo":0, "Refeitório":0, "Cozinha":0, "Água potável":0, "Acessibilidade":0 };
+        let totalEscolas = allSchools.length || 1;
         for(let s of allSchools) {
             if(isInfraPrecaria(s.salaAula)) { categorias["Estrutura básica"]++; itensDetalhados["Salas de aula"]++; }
             if(isInfraPrecaria(s.biblioteca)) { categorias["Pedagógico/tecnológico"]++; itensDetalhados["Biblioteca"]++; }
@@ -817,41 +909,23 @@
             if(isInfraPrecaria(s.agua)) { categorias["Conforto/higiene"]++; itensDetalhados["Água potável"]++; }
             if(isInfraPrecaria(s.acessibilidade)) { categorias["Acessibilidade"]++; itensDetalhados["Acessibilidade"]++; }
         }
-        
-        // Converter para percentual das escolas
-        let totalEscolas = allSchools.length || 1;
         for(let k in categorias) { categorias[k] = (categorias[k] / totalEscolas * 100).toFixed(1); }
-        for(let k in itensDetalhados) { itensDetalhados[k] = (itensDetalhados[k] / totalEscolas * 100).toFixed(1); }
-        
         if(charts.infraCategorias) charts.infraCategorias.destroy();
         let ctxCateg = document.getElementById('chartInfraCategorias');
-        if(ctxCateg) {
-            charts.infraCategorias = new Chart(ctxCateg, { type: 'bar', data: { labels: Object.keys(categorias), datasets: [{ data: Object.values(categorias), backgroundColor: '#e67e22' }] }, options: { responsive: true, scales: { y: { max: 100, title: { display: true, text: '% de escolas' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }, datalabels: { anchor: 'end', align: 'top', formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } });
-        }
+        if(ctxCateg) { charts.infraCategorias = new Chart(ctxCateg, { type: 'bar', data: { labels: Object.keys(categorias), datasets: [{ data: Object.values(categorias), backgroundColor: '#e67e22' }] }, options: { responsive: true, scales: { y: { max: 100, title: { display: true, text: '% de escolas' } } }, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => `${v}%` } } } }); }
         
+        for(let k in itensDetalhados) { itensDetalhados[k] = (itensDetalhados[k] / totalEscolas * 100).toFixed(1); }
         if(charts.infraItens) charts.infraItens.destroy();
         let ctxItens = document.getElementById('chartInfraItens');
-        if(ctxItens) {
-            charts.infraItens = new Chart(ctxItens, { type: 'bar', data: { labels: Object.keys(itensDetalhados), datasets: [{ data: Object.values(itensDetalhados), backgroundColor: '#3498db' }] }, options: { indexAxis: 'y', responsive: true, scales: { x: { max: 100, title: { display: true, text: '% de escolas' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }, datalabels: { anchor: 'end', align: 'right', formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } });
-        }
+        if(ctxItens) { charts.infraItens = new Chart(ctxItens, { type: 'bar', data: { labels: Object.keys(itensDetalhados), datasets: [{ data: Object.values(itensDetalhados), backgroundColor: '#3498db' }] }, options: { indexAxis: 'y', responsive: true, scales: { x: { max: 100, title: { display: true, text: '% de escolas' } } }, plugins: { datalabels: { anchor: 'end', align: 'right', formatter: (v) => `${v}%` } } } }); }
         
-        // TRANSPORTE - condições ruins (% escolas com problema)
-        let transporteComProblema = 0;
-        for(let s of allSchools) {
-            if(isInfraPrecaria(s.transporteSeguro)||isInfraPrecaria(s.transporteVeiculo)||isInfraPrecaria(s.transporteEstradas)||
-               isInfraPrecaria(s.transporteHorarios)||isInfraPrecaria(s.transporteRegularidade)||isInfraPrecaria(s.transportePermanencia)||
-               isInfraPrecaria(s.transporteTratamento)||isInfraPrecaria(s.transporteMotorista)) {
-                transporteComProblema++;
-            }
-        }
-        let percTransporteRuim = allSchools.length ? (transporteComProblema/allSchools.length*100).toFixed(1) : 0;
+        // TRANSPORTE
+        let transporteComProblema = allSchools.filter(s=>isInfraPrecaria(s.transporteSeguro)||isInfraPrecaria(s.transporteVeiculo)||isInfraPrecaria(s.transporteEstradas)).length;
+        let percTransporteRuim = totalEscolas ? (transporteComProblema/totalEscolas*100).toFixed(1) : 0;
         if(charts.transporte) charts.transporte.destroy();
         let ctxTrans = document.getElementById('chartTransporte');
-        if(ctxTrans) {
-            charts.transporte = new Chart(ctxTrans, { type: 'doughnut', data: { labels: ['Com problemas no transporte', 'Transporte adequado'], datasets: [{ data: [percTransporteRuim, 100-percTransporteRuim], backgroundColor: ['#c0392b','#27ae60'] }] }, options: { plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}%` } }, datalabels: { formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } });
-        }
+        if(ctxTrans) { charts.transporte = new Chart(ctxTrans, { type: 'doughnut', data: { labels: ['Com problemas', 'Adequado'], datasets: [{ data: [percTransporteRuim, 100-percTransporteRuim], backgroundColor: ['#c0392b','#27ae60'] }] }, options: { plugins: { datalabels: { formatter: (v) => `${v}%` } } } }); }
         
-        // ITENS DE TRANSPORTE
         let transItens = { "Seguro/confortável":0, "Veículo bom estado":0, "Estradas boas":0, "Horários adequados":0, "Regularidade":0, "Tempo adequado":0, "Tratamento adequado":0, "Motorista habilitado":0 };
         for(let s of allSchools) {
             if(isInfraPrecaria(s.transporteSeguro)) transItens["Seguro/confortável"]++;
@@ -863,13 +937,10 @@
             if(isInfraPrecaria(s.transporteTratamento)) transItens["Tratamento adequado"]++;
             if(isInfraPrecaria(s.transporteMotorista)) transItens["Motorista habilitado"]++;
         }
-        let transPercent = {};
-        for(let [k,v] of Object.entries(transItens)) { transPercent[k] = allSchools.length ? (v/allSchools.length*100).toFixed(1) : 0; }
+        let transPercent = {}; for(let [k,v] of Object.entries(transItens)) { transPercent[k] = totalEscolas ? (v/totalEscolas*100).toFixed(1) : 0; }
         if(charts.transporteItens) charts.transporteItens.destroy();
         let ctxTransItens = document.getElementById('chartTransporteItens');
-        if(ctxTransItens) {
-            charts.transporteItens = new Chart(ctxTransItens, { type: 'bar', data: { labels: Object.keys(transPercent), datasets: [{ data: Object.values(transPercent), backgroundColor: '#e67e22' }] }, options: { indexAxis: 'y', responsive: true, scales: { x: { max: 100, title: { display: true, text: '% de escolas com problema' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw}%` } }, datalabels: { anchor: 'end', align: 'right', formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } });
-        }
+        if(ctxTransItens) { charts.transporteItens = new Chart(ctxTransItens, { type: 'bar', data: { labels: Object.keys(transPercent), datasets: [{ data: Object.values(transPercent), backgroundColor: '#e67e22' }] }, options: { indexAxis: 'y', responsive: true, scales: { x: { max: 100, title: { display: true, text: '% de escolas' } } }, plugins: { datalabels: { anchor: 'end', align: 'right', formatter: (v) => `${v}%` } } } }); }
         
         // ALIMENTAÇÃO
         let alimOferta = {}, alimQuant = {}, alimOrg = {}, alimAgric = {}, alimCult = {};
@@ -887,18 +958,13 @@
         buildPercentBarChart('chartAlimentacaoCultura', alimCult, '#8e44ad');
         
         // RACISMO
-        let racCount = {};
-        for(let s of allSchools) { racCount[s.racismo] = (racCount[s.racismo]||0)+1; }
+        let racCount = {}; for(let s of allSchools) { racCount[s.racismo] = (racCount[s.racismo]||0)+1; }
         buildPercentPieChart('chartRacismo', racCount);
         
-        // CONTEÚDO QUILOMBOLA
-        let contCount = {};
-        for(let s of allSchools) { if(s.conteudoQuilombola) contCount[s.conteudoQuilombola] = (contCount[s.conteudoQuilombola]||0)+1; }
+        let contCount = {}; for(let s of allSchools) { if(s.conteudoQuilombola) contCount[s.conteudoQuilombola] = (contCount[s.conteudoQuilombola]||0)+1; }
         buildPercentPieChart('chartConteudoQuilombola', contCount);
         
-        // PROFESSORES QUILOMBOLAS
-        let profCount = {};
-        for(let s of allSchools) { if(s.professoresQuilombolas) profCount[s.professoresQuilombolas] = (profCount[s.professoresQuilombolas]||0)+1; }
+        let profCount = {}; for(let s of allSchools) { if(s.professoresQuilombolas) profCount[s.professoresQuilombolas] = (profCount[s.professoresQuilombolas]||0)+1; }
         buildPercentPieChart('chartProfessoresQuilombolas', profCount);
         
         // PARTICIPAÇÃO
@@ -913,8 +979,7 @@
         buildPercentPieChart('chartGestores', gestoresCount);
         
         // AVALIAÇÃO
-        let avCount = {};
-        filteredData.forEach(r=>{ let av=getAvaliacao(r); avCount[av]=(avCount[av]||0)+1; });
+        let avCount = {}; filteredData.forEach(r=>{ let av=getAvaliacao(r); avCount[av]=(avCount[av]||0)+1; });
         buildPercentPieChart('chartAvaliacao', avCount);
     }
     
@@ -925,7 +990,7 @@
         let semRacismoTotal = filteredData.filter(r=> getRacismo(r)==="Não").length;
         let percRac = comRacismoTotal ? (comRacismoFechou/comRacismoTotal*100).toFixed(1) : 0;
         let percSem = semRacismoTotal ? (semRacismoFechou/semRacismoTotal*100).toFixed(1) : 0;
-        document.getElementById('inferencia1').innerHTML = `<p>📍 Com relatos de racismo: <strong>${percRac}%</strong> tiveram fechamento escolar.<br>📍 Sem relatos de racismo: <strong>${percSem}%</strong> tiveram fechamento escolar.<br>${percRac > percSem ? '📌 Os dados sugerem uma correlação positiva entre racismo e fechamento de escolas.' : '📌 Não há diferença expressiva entre os grupos.'}</p>`;
+        document.getElementById('inferencia1').innerHTML = `<p>📍 Com relatos de racismo: <strong>${percRac}%</strong> tiveram fechamento.<br>📍 Sem relatos: <strong>${percSem}%</strong> tiveram fechamento.<br>${percRac > percSem ? '📌 Os dados sugerem correlação entre racismo e fechamento escolar.' : '📌 Não há diferença expressiva.'}</p>`;
         
         let transporteRuim = allSchools.filter(s=>isInfraPrecaria(s.transporteSeguro)||isInfraPrecaria(s.transporteVeiculo)||isInfraPrecaria(s.transporteEstradas));
         let evasaoRuim = transporteRuim.filter(s=>s.evasao==="Sim").length;
@@ -933,7 +998,7 @@
         let transporteBom = allSchools.filter(s=>!isInfraPrecaria(s.transporteSeguro)&&!isInfraPrecaria(s.transporteVeiculo)&&!isInfraPrecaria(s.transporteEstradas));
         let evasaoBom = transporteBom.filter(s=>s.evasao==="Sim").length;
         let percBomEvasao = transporteBom.length ? (evasaoBom/transporteBom.length*100).toFixed(1) : 0;
-        document.getElementById('inferencia2').innerHTML = `<p>🚛 Transporte precário: <strong>${percRuimEvasao}%</strong> dos jovens param de estudar.<br>✅ Transporte adequado: <strong>${percBomEvasao}%</strong> dos jovens param de estudar.<br>${percRuimEvasao > percBomEvasao ? '⚠️ O transporte precário está associado a maior evasão escolar.' : '⚠️ Outros fatores podem influenciar mais a evasão do que apenas o transporte.'}</p>`;
+        document.getElementById('inferencia2').innerHTML = `<p>🚛 Transporte precário: <strong>${percRuimEvasao}%</strong> param de estudar.<br>✅ Transporte adequado: <strong>${percBomEvasao}%</strong> param de estudar.<br>${percRuimEvasao > percBomEvasao ? '⚠️ Transporte precário está associado a maior evasão.' : '⚠️ Outros fatores influenciam mais a evasão.'}</p>`;
         
         let semEM = filteredData.filter(r=> getOfertaEM(r)==="Não");
         let evasaoSemEM = semEM.filter(r=> getEvasao(r)==="Sim").length;
@@ -941,20 +1006,18 @@
         let comEM = filteredData.filter(r=> getOfertaEM(r)==="Sim");
         let evasaoComEM = comEM.filter(r=> getEvasao(r)==="Sim").length;
         let percComEM = comEM.length ? (evasaoComEM/comEM.length*100).toFixed(1) : 0;
-        document.getElementById('inferencia3').innerHTML = `<p>🎓 Sem oferta de Ensino Médio: <strong>${percSemEM}%</strong> dos jovens param de estudar.<br>✅ Com oferta de Ensino Médio: <strong>${percComEM}%</strong> dos jovens param de estudar.<br>${percSemEM > percComEM ? '📌 A falta de oferta de Ensino Médio está associada a maior evasão escolar.' : '📌 A oferta de Ensino Médio isoladamente não reduz a evasão.'}</p>`;
+        document.getElementById('inferencia3').innerHTML = `<p>🎓 Sem oferta de EM: <strong>${percSemEM}%</strong> param de estudar.<br>✅ Com oferta de EM: <strong>${percComEM}%</strong> param de estudar.<br>${percSemEM > percComEM ? '📌 Falta de Ensino Médio aumenta evasão.' : '📌 Outros fatores são mais determinantes.'}</p>`;
     }
     
     function updateTable() {
         let tbody = document.querySelector('#dadosTable tbody');
-        if(!filteredData.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum dado com os filtros atuais. </td></tr>'; return; }
+        if(!filteredData.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum dado com os filtros atuais.  </tr>'; return; }
         let rows = filteredData.slice(0, 50).map(r => `
-            <tr>
-                <td>${(getComunidade(r) || "Não informado").substring(0, 60)}</td>
-                <td>${getUF(r)}</td>
-                <td>${(getPerfilInformante(r) || "Não informado").substring(0, 40)}</td>
-                <td><strong>${getRacismo(r)}</strong><br><small>${(getRelatoRacismo(r) || "").substring(0, 100)}</small></td>
-                <td><small>${(getSugestoes(r) || "").substring(0, 150)}</small></td>
-            </tr>
+            <tr><td>${(getComunidade(r) || "Não informado").substring(0, 60)}</td>
+            <td>${getUF(r)}</td>
+            <td>${(getPerfilInformante(r) || "Não informado").substring(0, 40)}</td>
+            <td><strong>${getRacismo(r)}</strong><br><small>${(getRelatoRacismo(r) || "").substring(0, 100)}</small></td>
+            <td><small>${(getSugestoes(r) || "").substring(0, 150)}</small></td></tr>
         `).join('');
         tbody.innerHTML = rows;
     }
@@ -965,26 +1028,32 @@
         let rows = filteredData.map(r => [getComunidade(r), getUF(r), getRegiao(r), getPerfilInformante(r), getRacismo(r), getFechamento(r), getOfertaEM(r), getEvasao(r), getSugestoes(r)]);
         let csvContent = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
         let blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        let link = document.createElement("a"); link.href = URL.createObjectURL(blob);
         link.download = `observatorio_quilombola_${new Date().toISOString().slice(0,19)}.csv`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        link.click(); URL.revokeObjectURL(link.href);
     }
     
+    function initMap() {
+        map = L.map('map').setView([-14.2350, -51.9253], 4);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' }).addTo(map);
+        updateMap();
+    }
+    
+    // Event listeners
     exportCSVBtn.addEventListener('click', exportFilteredCSV);
-    resetBtn.addEventListener('click', () => {
-        filterRegiao.value = "all"; filterUF.value = "all"; filterRacismo.value = "all";
-        filterFechamento.value = "all"; filterEM.value = "all";
-        applyFilters();
-    });
+    resetBtn.addEventListener('click', () => { filterRegiao.value = "all"; filterUF.value = "all"; filterRacismo.value = "all"; filterFechamento.value = "all"; filterEM.value = "all"; applyFilters(); });
     filterRegiao.addEventListener('change', applyFilters);
     filterUF.addEventListener('change', applyFilters);
     filterRacismo.addEventListener('change', applyFilters);
     filterFechamento.addEventListener('change', applyFilters);
     filterEM.addEventListener('change', applyFilters);
+    mapFilterEM.addEventListener('change', () => updateMap());
+    mapFilterEvasao.addEventListener('change', () => updateMap());
+    mapFilterRacismo.addEventListener('change', () => updateMap());
+    resetMapFilters.addEventListener('click', () => { mapFilterEM.value = "all"; mapFilterEvasao.value = "all"; mapFilterRacismo.value = "all"; updateMap(); });
     
     loadData();
+    setTimeout(initMap, 2000);
 </script>
 </body>
 </html>
