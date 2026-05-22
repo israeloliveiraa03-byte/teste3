@@ -17,8 +17,10 @@
         .hero h1 { font-size: 2rem; margin-bottom: 12px; }
         .hero p { font-size: 1rem; opacity: 0.9; max-width: 700px; }
         .hero-stats { display: flex; gap: 24px; margin-top: 28px; flex-wrap: wrap; }
-        .hero-stat { background: rgba(255,255,255,0.12); border-radius: 32px; padding: 12px 24px; text-align: center; min-width: 120px; }
-        .hero-stat .number { font-size: 2rem; font-weight: 800; }
+        .hero-stat { background: rgba(255,255,255,0.12); border-radius: 32px; padding: 12px 24px; text-align: center; min-width: 120px; cursor: pointer; transition: 0.2s; }
+        .hero-stat:hover { background: rgba(255,255,255,0.25); }
+        .hero-stat .number { font-size: 2rem; font-weight: 800; display: inline-block; margin-right: 6px; }
+        .hero-stat .info-icon { font-size: 1rem; opacity: 0.8; display: inline-block; cursor: help; }
         .filters-panel, .map-filters { background: white; border-radius: 24px; padding: 20px 28px; margin-bottom: 32px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; border: 1px solid #e9edf2; }
         .filter-group { flex: 1 1 180px; }
         .filter-group label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: #5a6e7c; display: block; margin-bottom: 6px; }
@@ -26,8 +28,10 @@
         button { background: #1e4a3b; color: white; border: none; font-weight: 600; }
         button.reset-btn { background: #e67e22; }
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        .kpi-card { background: white; border-radius: 24px; padding: 20px; text-align: center; border: 1px solid #edf2f7; }
-        .kpi-number { font-size: 2rem; font-weight: 800; color: #1e4a3b; }
+        .kpi-card { background: white; border-radius: 24px; padding: 20px; text-align: center; border: 1px solid #edf2f7; cursor: pointer; transition: 0.2s; }
+        .kpi-card:hover { background: #fef9e6; }
+        .kpi-number { font-size: 2rem; font-weight: 800; color: #1e4a3b; display: inline-block; margin-right: 6px; }
+        .kpi-info { font-size: 0.9rem; color: #e67e22; display: inline-block; cursor: help; }
         .section-title { font-size: 1.5rem; font-weight: 700; margin: 40px 0 20px; border-left: 5px solid #e67e22; padding-left: 16px; }
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 24px; margin-bottom: 32px; }
         .chart-card { background: white; border-radius: 24px; padding: 18px 20px; border: 1px solid #eef2f6; }
@@ -44,6 +48,40 @@
         th { background: #f1f5f9; }
         .footer { text-align: center; font-size: 0.7rem; margin-top: 48px; color: #687782; padding-top: 24px; border-top: 1px solid #e2edf2; }
         @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } .hero { padding: 24px; } }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 32px;
+            padding: 28px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .modal-content h3 { margin-bottom: 12px; color: #1e4a3b; }
+        .modal-content p { margin-bottom: 20px; line-height: 1.5; color: #2c3e50; }
+        .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .close-modal:hover { color: #e67e22; }
     </style>
 </head>
 <body>
@@ -116,6 +154,15 @@
         </table>
     </div>
     <div class="footer">🔍 Dados de pesquisa direta com lideranças quilombolas – atualização contínua pela Rede Nacional.</div>
+</div>
+
+<!-- MODAL DE INFORMAÇÕES -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3 id="modalTitle">Título</h3>
+        <p id="modalText">Descrição detalhada do indicador.</p>
+    </div>
 </div>
 
 <script>
@@ -201,7 +248,6 @@
     function rebuildAll() {
         allSchools = [];
         for (let row of filteredData) allSchools.push(...extractSchools(row));
-        // CORREÇÃO: primeiro agrega os dados por UF, depois atualiza os KPIs
         aggregateUF();
         updateKPIs();
         updateAllCharts();
@@ -211,7 +257,6 @@
 
     function aggregateUF() {
         ufAggregated = {};
-        // Primeiro, agrupa os dados das escolas (já com sigla)
         for (let s of allSchools) {
             let uf = s.uf_sigla;
             if (!uf || uf === "Não informado") continue;
@@ -225,7 +270,6 @@
             if (s.ofertaEM === "Sim") ufAggregated[uf].em_count++;
             if (s.evasao === "Sim") ufAggregated[uf].evasao_count++;
         }
-        // Depois, conta as respostas por UF (baseado nos nomes originais)
         for (let row of filteredData) {
             let ufNome = getUF(row);
             if (!ufNome || ufNome === "Não informado") continue;
@@ -235,7 +279,6 @@
             }
             ufAggregated[ufSigla].total_respostas = (ufAggregated[ufSigla].total_respostas || 0) + 1;
         }
-        // Calcula percentuais
         for (let uf in ufAggregated) {
             let d = ufAggregated[uf];
             d.perc_racismo = d.total_escolas ? (d.racismo_count / d.total_escolas * 100).toFixed(1) : 0;
@@ -254,22 +297,50 @@
         let fora = totalEscolas - dentro;
         let ufs = Object.keys(ufAggregated).length;
         document.getElementById('heroStats').innerHTML = `
-            <div class="hero-stat"><div class="number">${totalResp}</div><div class="label">Respostas</div></div>
-            <div class="hero-stat"><div class="number">${territorios}</div><div class="label">Territórios</div></div>
-            <div class="hero-stat"><div class="number">${totalEscolas}</div><div class="label">Escolas</div></div>
-            <div class="hero-stat"><div class="number">${dentro}</div><div class="label">Escolas DENTRO</div></div>
-            <div class="hero-stat"><div class="number">${fora}</div><div class="label">Escolas FORA</div></div>
-            <div class="hero-stat"><div class="number">${ufs}</div><div class="label">UFs mapeadas</div></div>
+            <div class="hero-stat" onclick="showInfo('respostas')"><span class="number">${totalResp}</span><span class="info-icon">ⓘ</span><div class="label">Respostas</div></div>
+            <div class="hero-stat" onclick="showInfo('territorios')"><span class="number">${territorios}</span><span class="info-icon">ⓘ</span><div class="label">Territórios</div></div>
+            <div class="hero-stat" onclick="showInfo('escolas_total')"><span class="number">${totalEscolas}</span><span class="info-icon">ⓘ</span><div class="label">Escolas</div></div>
+            <div class="hero-stat" onclick="showInfo('escolas_dentro')"><span class="number">${dentro}</span><span class="info-icon">ⓘ</span><div class="label">Escolas DENTRO</div></div>
+            <div class="hero-stat" onclick="showInfo('escolas_fora')"><span class="number">${fora}</span><span class="info-icon">ⓘ</span><div class="label">Escolas FORA</div></div>
+            <div class="hero-stat" onclick="showInfo('ufs_mapeadas')"><span class="number">${ufs}</span><span class="info-icon">ⓘ</span><div class="label">UFs mapeadas</div></div>
         `;
         document.getElementById('kpiArea').innerHTML = `
-            <div class="kpi-card"><div class="kpi-number">${totalResp}</div><div class="kpi-label">Formulários</div></div>
-            <div class="kpi-card"><div class="kpi-number">${territorios}</div><div class="kpi-label">Comunidades</div></div>
-            <div class="kpi-card"><div class="kpi-number">${totalEscolas}</div><div class="kpi-label">Escolas</div></div>
-            <div class="kpi-card"><div class="kpi-number">${dentro}</div><div class="kpi-label">Escolas dentro</div></div>
-            <div class="kpi-card"><div class="kpi-number">${fora}</div><div class="kpi-label">Escolas fora</div></div>
-            <div class="kpi-card"><div class="kpi-number">${allSchools.filter(s=>s.racismo==="Sim").length}</div><div class="kpi-label">Relatos racismo</div></div>
+            <div class="kpi-card" onclick="showInfo('respostas')"><div class="kpi-number">${totalResp}</div><span class="kpi-info">ⓘ</span><div class="kpi-label">Formulários</div></div>
+            <div class="kpi-card" onclick="showInfo('territorios')"><div class="kpi-number">${territorios}</div><span class="kpi-info">ⓘ</span><div class="kpi-label">Comunidades</div></div>
+            <div class="kpi-card" onclick="showInfo('escolas_total')"><div class="kpi-number">${totalEscolas}</div><span class="kpi-info">ⓘ</span><div class="kpi-label">Escolas</div></div>
+            <div class="kpi-card" onclick="showInfo('escolas_dentro')"><div class="kpi-number">${dentro}</div><span class="kpi-info">ⓘ</span><div class="kpi-label">Escolas dentro</div></div>
+            <div class="kpi-card" onclick="showInfo('escolas_fora')"><div class="kpi-number">${fora}</div><span class="kpi-info">ⓘ</span><div class="kpi-label">Escolas fora</div></div>
+            <div class="kpi-card" onclick="showInfo('racismo_relatos')"><div class="kpi-number">${allSchools.filter(s=>s.racismo==="Sim").length}</div><span class="kpi-info">ⓘ</span><div class="kpi-label">Relatos racismo</div></div>
         `;
     }
+
+    // ========== MODAL DE INFORMAÇÃO ==========
+    window.showInfo = function(type) {
+        const modal = document.getElementById('infoModal');
+        const title = document.getElementById('modalTitle');
+        const text = document.getElementById('modalText');
+        const descriptions = {
+            respostas: { title: "📋 Respostas", text: "Número total de formulários preenchidos por lideranças quilombolas, professores, gestores e outros atores da comunidade. Cada resposta representa uma pessoa informante e pode conter informações sobre até 5 escolas do território." },
+            territorios: { title: "🌍 Territórios", text: "Quantidade de comunidades/territórios quilombolas distintos presentes na base de dados. Um mesmo território pode ter múltiplas respostas (ex: diferentes lideranças)." },
+            escolas_total: { title: "🏫 Escolas", text: "Total de escolas mencionadas nos formulários. Cada resposta pode listar até 5 escolas que atendem estudantes quilombolas (dentro ou fora do território)." },
+            escolas_dentro: { title: "🏠 Escolas DENTRO", text: "Escolas localizadas fisicamente dentro do território quilombola. São aquelas cuja localização foi informada como 'na própria comunidade quilombola'." },
+            escolas_fora: { title: "🏚️ Escolas FORA", text: "Escolas localizadas fora do território quilombola, mas que atendem estudantes quilombolas (ex: em sede de município, outra comunidade rural, etc.)." },
+            ufs_mapeadas: { title: "🗺️ UFs mapeadas", text: "Número de Unidades da Federação (estados) onde há pelo menos uma resposta ou escola cadastrada. Inclui estados com qualquer registro na base." },
+            racismo_relatos: { title: "⚠️ Relatos de racismo", text: "Número de escolas onde houve relato de ocorrência de racismo (contra estudantes, profissionais ou familiares), conforme resposta à pergunta específica do formulário." }
+        };
+        const info = descriptions[type] || { title: "Informação", text: "Detalhes deste indicador não disponíveis." };
+        title.innerText = info.title;
+        text.innerText = info.text;
+        modal.style.display = "flex";
+    };
+    // Fechar modal
+    document.querySelector('.close-modal').addEventListener('click', () => {
+        document.getElementById('infoModal').style.display = "none";
+    });
+    window.onclick = function(event) {
+        const modal = document.getElementById('infoModal');
+        if (event.target === modal) modal.style.display = "none";
+    };
 
     // ========== GRÁFICOS ==========
     function buildPercentPie(id, dataObj) { if (charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if (!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = total ? (v/total*100).toFixed(1) : 0; charts[id] = new Chart(ctx, { type: 'pie', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: ['#1e4a3b','#e67e22','#3498db','#95a5a6','#e74c3c'] }] }, options: { plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}%` } }, datalabels: { formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } }); }
@@ -296,7 +367,7 @@
     function updateTable() {
         let tbody = document.querySelector('#dadosTable tbody');
         if (!filteredData.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum registro com filtros atuais.</td></tr>'; return; }
-        let rows = filteredData.slice(0, 45).map(r => `<tr><td>${(getComunidade(r) || "Não informado").substring(0, 65)}</td><td>${getUF(r)}</td><td>${getPerfil(r)}</td><td><small>${getRelato(r).substring(0, 120)}</small></td><td><small>${getSugestoes(r).substring(0, 120)}</small></td></tr>`).join('');
+        let rows = filteredData.slice(0, 45).map(r => `<tr><td>${(getComunidade(r) || "Não informado").substring(0, 65)}</td><td>${getUF(r)}</td><td>${getPerfil(r)}</td>}<td><small>${getRelato(r).substring(0, 120)}</small></td>}<td><small>${getSugestoes(r).substring(0, 120)}</small></td></tr>`).join('');
         tbody.innerHTML = rows;
     }
 
