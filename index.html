@@ -209,34 +209,43 @@
     }
 
     function aggregateUF() {
-        ufAggregated = {};
-        for (let s of allSchools) {
-            let uf = s.uf_sigla;
-            if (!uf || uf === "Não informado") continue;
-            if (!ufAggregated[uf]) ufAggregated[uf] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
-            ufAggregated[uf].total_escolas++;
-            if (s.localizacao === "Dentro") ufAggregated[uf].escolas_dentro++;
-            if (s.racismo === "Sim") ufAggregated[uf].racismo_count++;
-            if (s.fechamento === "Sim") ufAggregated[uf].fechamento_count++;
-            if (s.ofertaEM === "Sim") ufAggregated[uf].em_count++;
-            if (s.evasao === "Sim") ufAggregated[uf].evasao_count++;
+    ufAggregated = {};
+    // Primeiro, agrupa os dados das escolas (já com sigla)
+    for (let s of allSchools) {
+        let uf = s.uf_sigla || s.uf_nome; // fallback
+        if (!uf || uf === "Não informado") continue;
+        if (!ufAggregated[uf]) {
+            ufAggregated[uf] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
         }
-        for (let row of filteredData) {
-            let uf = ufToSigla(getUF(row));
-            if (uf && uf !== "Não informado") {
-                if (!ufAggregated[uf]) ufAggregated[uf] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
-                ufAggregated[uf].total_respostas = (ufAggregated[uf].total_respostas || 0) + 1;
-            }
-        }
-        for (let uf in ufAggregated) {
-            let d = ufAggregated[uf];
-            d.perc_racismo = d.total_escolas ? (d.racismo_count / d.total_escolas * 100).toFixed(1) : 0;
-            d.perc_fechamento = d.total_escolas ? (d.fechamento_count / d.total_escolas * 100).toFixed(1) : 0;
-            d.perc_em = d.total_escolas ? (d.em_count / d.total_escolas * 100).toFixed(1) : 0;
-            d.perc_sem_evasao = d.total_escolas ? ((d.total_escolas - d.evasao_count) / d.total_escolas * 100).toFixed(1) : 0;
-            d.perc_indicador_composto = ( (d.perc_em + d.perc_sem_evasao + (100 - d.perc_racismo) ) / 3 ).toFixed(1);
-        }
+        ufAggregated[uf].total_escolas++;
+        if (s.localizacao === "Dentro") ufAggregated[uf].escolas_dentro++;
+        if (s.racismo === "Sim") ufAggregated[uf].racismo_count++;
+        if (s.fechamento === "Sim") ufAggregated[uf].fechamento_count++;
+        if (s.ofertaEM === "Sim") ufAggregated[uf].em_count++;
+        if (s.evasao === "Sim") ufAggregated[uf].evasao_count++;
     }
+    // Depois, conta as respostas por UF (baseado nos nomes originais)
+    for (let row of filteredData) {
+        let ufNome = getUF(row);
+        if (!ufNome || ufNome === "Não informado") continue;
+        // tenta converter para sigla para manter consistência
+        let ufSigla = ufToSigla(ufNome);
+        if (!ufAggregated[ufSigla]) {
+            ufAggregated[ufSigla] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
+        }
+        ufAggregated[ufSigla].total_respostas = (ufAggregated[ufSigla].total_respostas || 0) + 1;
+    }
+    // Calcula percentuais
+    for (let uf in ufAggregated) {
+        let d = ufAggregated[uf];
+        d.perc_racismo = d.total_escolas ? (d.racismo_count / d.total_escolas * 100).toFixed(1) : 0;
+        d.perc_fechamento = d.total_escolas ? (d.fechamento_count / d.total_escolas * 100).toFixed(1) : 0;
+        d.perc_em = d.total_escolas ? (d.em_count / d.total_escolas * 100).toFixed(1) : 0;
+        d.perc_sem_evasao = d.total_escolas ? ((d.total_escolas - d.evasao_count) / d.total_escolas * 100).toFixed(1) : 0;
+        d.perc_indicador_composto = ((parseFloat(d.perc_em) + parseFloat(d.perc_sem_evasao) + (100 - parseFloat(d.perc_racismo))) / 3).toFixed(1);
+    }
+}
+    
 
     function updateKPIs() {
         let totalResp = filteredData.length;
