@@ -201,51 +201,50 @@
     function rebuildAll() {
         allSchools = [];
         for (let row of filteredData) allSchools.push(...extractSchools(row));
+        // CORREÇÃO: primeiro agrega os dados por UF, depois atualiza os KPIs
+        aggregateUF();
         updateKPIs();
         updateAllCharts();
         updateTable();
-        aggregateUF();
         if (map) updateMap();
     }
 
     function aggregateUF() {
-    ufAggregated = {};
-    // Primeiro, agrupa os dados das escolas (já com sigla)
-    for (let s of allSchools) {
-        let uf = s.uf_sigla || s.uf_nome; // fallback
-        if (!uf || uf === "Não informado") continue;
-        if (!ufAggregated[uf]) {
-            ufAggregated[uf] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
+        ufAggregated = {};
+        // Primeiro, agrupa os dados das escolas (já com sigla)
+        for (let s of allSchools) {
+            let uf = s.uf_sigla;
+            if (!uf || uf === "Não informado") continue;
+            if (!ufAggregated[uf]) {
+                ufAggregated[uf] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
+            }
+            ufAggregated[uf].total_escolas++;
+            if (s.localizacao === "Dentro") ufAggregated[uf].escolas_dentro++;
+            if (s.racismo === "Sim") ufAggregated[uf].racismo_count++;
+            if (s.fechamento === "Sim") ufAggregated[uf].fechamento_count++;
+            if (s.ofertaEM === "Sim") ufAggregated[uf].em_count++;
+            if (s.evasao === "Sim") ufAggregated[uf].evasao_count++;
         }
-        ufAggregated[uf].total_escolas++;
-        if (s.localizacao === "Dentro") ufAggregated[uf].escolas_dentro++;
-        if (s.racismo === "Sim") ufAggregated[uf].racismo_count++;
-        if (s.fechamento === "Sim") ufAggregated[uf].fechamento_count++;
-        if (s.ofertaEM === "Sim") ufAggregated[uf].em_count++;
-        if (s.evasao === "Sim") ufAggregated[uf].evasao_count++;
-    }
-    // Depois, conta as respostas por UF (baseado nos nomes originais)
-    for (let row of filteredData) {
-        let ufNome = getUF(row);
-        if (!ufNome || ufNome === "Não informado") continue;
-        // tenta converter para sigla para manter consistência
-        let ufSigla = ufToSigla(ufNome);
-        if (!ufAggregated[ufSigla]) {
-            ufAggregated[ufSigla] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
+        // Depois, conta as respostas por UF (baseado nos nomes originais)
+        for (let row of filteredData) {
+            let ufNome = getUF(row);
+            if (!ufNome || ufNome === "Não informado") continue;
+            let ufSigla = ufToSigla(ufNome);
+            if (!ufAggregated[ufSigla]) {
+                ufAggregated[ufSigla] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
+            }
+            ufAggregated[ufSigla].total_respostas = (ufAggregated[ufSigla].total_respostas || 0) + 1;
         }
-        ufAggregated[ufSigla].total_respostas = (ufAggregated[ufSigla].total_respostas || 0) + 1;
+        // Calcula percentuais
+        for (let uf in ufAggregated) {
+            let d = ufAggregated[uf];
+            d.perc_racismo = d.total_escolas ? (d.racismo_count / d.total_escolas * 100).toFixed(1) : 0;
+            d.perc_fechamento = d.total_escolas ? (d.fechamento_count / d.total_escolas * 100).toFixed(1) : 0;
+            d.perc_em = d.total_escolas ? (d.em_count / d.total_escolas * 100).toFixed(1) : 0;
+            d.perc_sem_evasao = d.total_escolas ? ((d.total_escolas - d.evasao_count) / d.total_escolas * 100).toFixed(1) : 0;
+            d.perc_indicador_composto = ((parseFloat(d.perc_em) + parseFloat(d.perc_sem_evasao) + (100 - parseFloat(d.perc_racismo))) / 3).toFixed(1);
+        }
     }
-    // Calcula percentuais
-    for (let uf in ufAggregated) {
-        let d = ufAggregated[uf];
-        d.perc_racismo = d.total_escolas ? (d.racismo_count / d.total_escolas * 100).toFixed(1) : 0;
-        d.perc_fechamento = d.total_escolas ? (d.fechamento_count / d.total_escolas * 100).toFixed(1) : 0;
-        d.perc_em = d.total_escolas ? (d.em_count / d.total_escolas * 100).toFixed(1) : 0;
-        d.perc_sem_evasao = d.total_escolas ? ((d.total_escolas - d.evasao_count) / d.total_escolas * 100).toFixed(1) : 0;
-        d.perc_indicador_composto = ((parseFloat(d.perc_em) + parseFloat(d.perc_sem_evasao) + (100 - parseFloat(d.perc_racismo))) / 3).toFixed(1);
-    }
-}
-    
 
     function updateKPIs() {
         let totalResp = filteredData.length;
@@ -294,7 +293,7 @@
         let consultaCount = {}; allSchools.forEach(s=>{ if(s.participacaoConsulta) consultaCount[s.participacaoConsulta]=(consultaCount[s.participacaoConsulta]||0)+1; });
         buildPercentBar('chartConsulta', consultaCount, '#27ae60');
     }
-    function updateTable() { /* mantido igual ao anterior */ 
+    function updateTable() {
         let tbody = document.querySelector('#dadosTable tbody');
         if (!filteredData.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum registro com filtros atuais.</td></tr>'; return; }
         let rows = filteredData.slice(0, 45).map(r => `<tr><td>${(getComunidade(r) || "Não informado").substring(0, 65)}</td><td>${getUF(r)}</td><td>${getPerfil(r)}</td><td><small>${getRelato(r).substring(0, 120)}</small></td><td><small>${getSugestoes(r).substring(0, 120)}</small></td></tr>`).join('');
@@ -311,7 +310,6 @@
             if (val > maxVal) maxVal = val;
         }
         maxVal = Math.max(maxVal, 1);
-        // Carregar GeoJSON
         fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson')
             .then(res => res.json())
             .then(geo => {
