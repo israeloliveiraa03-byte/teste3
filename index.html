@@ -14,10 +14,11 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             /* ALTERAÇÃO: imagem de fundo (substitua pela sua URL) + overlay vermelho */
-            background-image: url('https://drive.google.com/uc?export=view&id=1e3PoMrPzOSwNiUFmupqMdcNExVPmiBxQ'); /* link da sua imagem */
-            background-size: cover;
-            background-position: center;
+            background-image: url('fundo-afro.png');
+            background-size: 420px;
+            background-repeat: repeat;
             background-attachment: fixed;
+            background-position: center;
             color: #1e2a3e;
             position: relative;
         }
@@ -40,16 +41,19 @@
         }
         /* Elementos decorativos das espadas (mantidos) */
         body::after {
-            content: "⚔️⚔️⚔️";
-            font-size: 80px;
-            color: rgba(230, 126, 34, 0.08);
+            content: "";
             position: fixed;
-            bottom: 0;
-            right: 0;
-            white-space: pre;
+            bottom: 20px;
+            right: 20px;
+            width: 220px;
+            height: 220px;
+            background-image: url('espada-sao-jorge.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.12;
             pointer-events: none;
             z-index: -1;
-            transform: rotate(-15deg);
         }
         .sword-decor {
             content: "⚔️";
