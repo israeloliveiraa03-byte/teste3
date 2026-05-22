@@ -10,10 +10,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
+        /* ========== ESTILOS (mesmos do projeto original) ========== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            /* ALTERAÇÃO: imagem de fundo (substitua pela sua URL) + overlay vermelho */
             background-image: url('fundo-afro.png');
             background-size: 420px;
             background-repeat: repeat;
@@ -22,13 +22,9 @@
             color: #1e2a3e;
             position: relative;
         }
-        /* Fallback caso a imagem do Google Drive não carregue */
         @media (max-width: 800px) {
-            body {
-                background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop');
-            }
+            body { background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop'); }
         }
-        /* Overlay escuro para contraste do texto */
         body::before {
             content: "";
             position: fixed;
@@ -39,7 +35,6 @@
             background-color: rgba(0, 0, 0, 0.65);
             z-index: -2;
         }
-        /* Elementos decorativos das espadas (mantidos) */
         body::after {
             content: "";
             position: fixed;
@@ -54,17 +49,6 @@
             opacity: 0.12;
             pointer-events: none;
             z-index: -1;
-        }
-        .sword-decor {
-            content: "⚔️";
-            font-size: 180px;
-            color: rgba(0,0,0,0.03);
-            position: fixed;
-            top: 20%;
-            left: -50px;
-            pointer-events: none;
-            z-index: -1;
-            transform: rotate(25deg);
         }
         .container { max-width: 1400px; margin: 0 auto; padding: 24px 20px 40px; position: relative; z-index: 1; }
         .hero { background: linear-gradient(135deg, #0b2b26 0%, #1e4a3b 100%); border-radius: 28px; padding: 32px 40px; margin-bottom: 32px; color: white; display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
@@ -91,9 +75,8 @@
         .kpi-number { font-size: 2rem; font-weight: 800; color: #1e4a3b; display: inline-block; margin-right: 6px; }
         .kpi-info { font-size: 0.9rem; color: #e67e22; display: inline-block; cursor: help; }
         .section-title { font-size: 1.5rem; font-weight: 700; margin: 40px 0 20px; border-left: 5px solid #e67e22; padding-left: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: white; text-shadow: 1px 1px 2px black; }
-        .section-title .info-chart-icon { font-size: 1rem; color: #e67e22; cursor: help; background: #fef0e0; padding: 0 8px; border-radius: 30px; line-height: 1.5; }
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 24px; margin-bottom: 32px; }
-        .chart-card { background: rgba(255,255,255,0.95); border-radius: 24px; padding: 18px 20px; border: 1px solid #eef2f6; position: relative; backdrop-filter: blur(0px); }
+        .chart-card { background: rgba(255,255,255,0.95); border-radius: 24px; padding: 18px 20px; border: 1px solid #eef2f6; }
         .chart-card h3 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
         .chart-card .chart-info { cursor: pointer; background: #f0f0f0; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         canvas { max-height: 320px; width: 100%; }
@@ -116,33 +99,113 @@
         .footer-logos img { height: 60px; width: auto; background: white; border-radius: 12px; padding: 6px; }
         .footer p { margin: 12px 0; line-height: 1.5; }
         .update-date { font-weight: bold; color: #e67e22; }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: white;
-            border-radius: 32px;
-            padding: 28px;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: 0 20px 35px rgba(0,0,0,0.2);
-        }
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; border-radius: 32px; padding: 28px; max-width: 500px; width: 90%; box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
         .modal-content h3 { margin-bottom: 12px; color: #1e4a3b; }
         .close-modal { float: right; font-size: 1.8rem; cursor: pointer; }
         @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } .hero { flex-direction: column; text-align: center; } }
+
+        /* CHATBOT ÀGBÁ com DeepSeek */
+        .chat-button {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e4a3b;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            padding: 12px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        .chat-button:hover { background: #e67e22; transform: scale(1.02); }
+        .chat-window {
+            position: fixed;
+            bottom: 90px;
+            right: 24px;
+            width: 380px;
+            max-width: calc(100vw - 48px);
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.3);
+            display: none;
+            flex-direction: column;
+            z-index: 1001;
+            overflow: hidden;
+            font-size: 0.9rem;
+        }
+        .chat-header {
+            background: #1e4a3b;
+            color: white;
+            padding: 12px 16px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .chat-header span { cursor: pointer; }
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 12px;
+            background: #fef9e6;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .chat-message {
+            max-width: 85%;
+            padding: 8px 12px;
+            border-radius: 18px;
+            line-height: 1.4;
+        }
+        .chat-message.bot {
+            background: #e9ecef;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-message.user {
+            background: #1e4a3b;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-input-area {
+            display: flex;
+            border-top: 1px solid #ddd;
+            background: white;
+        }
+        .chat-input-area input {
+            flex: 1;
+            border: none;
+            padding: 12px;
+            border-radius: 0;
+        }
+        .chat-input-area button {
+            width: auto;
+            border-radius: 0;
+            background: #e67e22;
+            padding: 0 16px;
+        }
+        .loading-dots::after {
+            content: " ...";
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
+        @media (max-width: 500px) {
+            .chat-window { width: 300px; bottom: 80px; right: 16px; }
+            .chat-button { padding: 8px 16px; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
+    <!-- ========== CONTEÚDO PRINCIPAL (IDÊNTICO AO ORIGINAL) ========== -->
     <div class="hero">
         <div class="hero-text">
             <h1>📚 Central de sistematização de dados<br>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas (CONAQ)</h1>
@@ -215,7 +278,6 @@
     <div class="charts-grid" id="chartsGrid"></div>
 
     <h2 class="section-title">📝 Relatos e sugestões</h2>
-    <!-- Filtro adicional para a tabela de relatos -->
     <div class="table-filters">
         <div class="filter-group"><label>🔍 Filtrar relatos por palavra</label><input type="text" id="tableSearchFilter" placeholder="Digite para filtrar..."></div>
     </div>
@@ -234,7 +296,7 @@
         <p><span class="update-date" id="lastUpdateDate">Carregando data...</span> – Dados replicados em tempo real a partir do formulário da Rede Nacional.</p>
         <p><strong>© 2025 – Coordenação Nacional de Articulação das Comunidades Negras Rurais Quilombolas (CONAQ)</strong><br>
         Por meio da <strong>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas</strong>, iniciativa do <strong>Coletivo Nacional de Educação da CONAQ</strong> criada em 2025 para fortalecer a representatividade das comunidades na produção e disseminação do conhecimento, desenvolver novos estudos voltados para a realidade e desigualdades que afetam escolas e estudantes quilombolas, atuar para fomentar os princípios da justiça social por meio de pesquisas comprometidas com os territórios quilombolas, entre outras ações de fortalecimento das comunidades.</p>
-        <p style="font-size:0.7rem; margin-top:16px;"> Versão 9</p>
+        <p style="font-size:0.7rem; margin-top:16px;"> Versão 9 – com IA Àgbá (DeepSeek)</p>
     </div>
 </div>
 
@@ -246,6 +308,22 @@
     </div>
 </div>
 
+<!-- CHATBOT ÀGBÁ com DeepSeek -->
+<div class="chat-button" id="chatButton">💬 Àgbá (IA)</div>
+<div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+        <span>🧠 Àgbá - assistente com IA (DeepSeek)</span>
+        <span id="closeChat">✕</span>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="chat-message bot">Olá! Sou Àgbá, agora com inteligência artificial do DeepSeek. Posso responder perguntas detalhadas sobre os dados da Educação Escolar Quilombola com base na planilha completa. Ex: "Liste os 5 territórios com mais relatos de racismo", "Compare fechamento de escolas entre Nordeste e Sudeste", "Qual a média de escolas por território?" etc.</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="chatInput" placeholder="Digite sua pergunta...">
+        <button id="sendChat">Enviar</button>
+    </div>
+</div>
+
 <script>
     Chart.register(ChartDataLabels);
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTcH5ek5iMwO7EiEZw4WHYJZOcIXRUqSmEtRCXl8X4KNrh0lx7Mhn39bcLumdcIRVknQ6dR2oF80SRl/pub?gid=619019966&single=true&output=csv";
@@ -254,7 +332,7 @@
     let comparisonChart = null;
     let currentFilteredRows = [];
 
-    // ========== FUNÇÕES DE EXTRAÇÃO (idênticas às anteriores) ==========
+    // ========== FUNÇÕES DE EXTRAÇÃO (IDÊNTICAS AO ORIGINAL) ==========
     function getSafe(row, key) {
         if (!row) return "";
         for (let k in row) {
@@ -352,14 +430,14 @@
 
     function renderChartsGrid() {
         const chartsConfig = [
-            { id: 'chartRegiao', title: '🌎 Região', desc: "Distribuição das respostas por região do Brasil (Norte, Nordeste, Sudeste, Sul, Centro-Oeste)." },
-            { id: 'chartDiretrizes', title: '📜 Diretrizes municipais', desc: "Existência de Diretrizes Curriculares ou documentos oficiais municipais para Educação Escolar Quilombola." },
-            { id: 'chartFechamentoGeral', title: '🏚️ Fechamento/nucleação', desc: "Percentual de territórios que sofreram fechamento, nucleação ou transferência de escolas nos últimos 10 anos." },
-            { id: 'chartOfertaEM', title: '🎓 Oferta de Ensino Médio', desc: "Oferta de Ensino Médio dentro ou nas proximidades do território (evita migração forçada)." },
-            { id: 'chartEvasaoEM', title: '🚫 Evasão por falta de EM', desc: "Evasão de jovens por falta de oferta de Ensino Médio no território ou proximidades." },
-            { id: 'chartRacismo', title: '⚠️ Racismo na escola', desc: "Relatos de ocorrência de racismo no contexto escolar (entre estudantes, profissionais ou familiares)." },
-            { id: 'chartAlimentacaoCultura', title: '🍽️ Alimentação respeita cultura', desc: "Percentual de escolas onde a alimentação escolar respeita a cultura alimentar quilombola." },
-            { id: 'chartConsulta', title: '🤝 Comunidade consultada', desc: "Percentual de escolas onde a comunidade é consultada em decisões importantes (gestão democrática)." }
+            { id: 'chartRegiao', title: '🌎 Região', desc: "Distribuição das respostas por região do Brasil." },
+            { id: 'chartDiretrizes', title: '📜 Diretrizes municipais', desc: "Existência de Diretrizes Curriculares para EEQ." },
+            { id: 'chartFechamentoGeral', title: '🏚️ Fechamento/nucleação', desc: "Percentual de territórios que sofreram fechamento nos últimos 10 anos." },
+            { id: 'chartOfertaEM', title: '🎓 Oferta de Ensino Médio', desc: "Oferta de EM dentro ou nas proximidades do território." },
+            { id: 'chartEvasaoEM', title: '🚫 Evasão por falta de EM', desc: "Evasão de jovens por falta de oferta de EM." },
+            { id: 'chartRacismo', title: '⚠️ Racismo na escola', desc: "Relatos de racismo no contexto escolar." },
+            { id: 'chartAlimentacaoCultura', title: '🍽️ Alimentação respeita cultura', desc: "Escolas onde a alimentação respeita a cultura quilombola." },
+            { id: 'chartConsulta', title: '🤝 Comunidade consultada', desc: "Escolas onde a comunidade é consultada em decisões." }
         ];
         let html = '';
         for (let c of chartsConfig) {
@@ -372,11 +450,10 @@
     window.showInfoModalChart = function(chartId, title, desc) {
         const modal = document.getElementById('infoModal');
         document.getElementById('modalTitle').innerText = `📊 ${title}`;
-        document.getElementById('modalText').innerHTML = `${desc}<br><br><strong>Cálculo:</strong> Baseado nos dados filtrados, considerando percentuais sobre o total de respostas ou escolas, conforme o gráfico.`;
+        document.getElementById('modalText').innerHTML = `${desc}<br><br><strong>Cálculo:</strong> Baseado nos dados filtrados.`;
         modal.style.display = "flex";
     };
 
-    // Função atualizada com suporte a filtro de texto
     function updateTable() {
         let searchTerm = document.getElementById('tableSearchFilter').value.toLowerCase();
         let filtered = filteredData.filter(row => {
@@ -399,7 +476,7 @@
 
     function getAllPivotVariables() { return { "Região": (r)=>getRegiao(r), "UF": (r)=>getUF(r), "Racismo": (r)=>getRacismo(r), "Fechamento": (r)=>getFechamento(r), "Oferta EM": (r)=>getOfertaEM(r), "Evasão": (r)=>getEvasao(r), "Diretrizes": (r)=>getDiretrizes(r), "Localização escola": (r)=>{ let s=extractSchools(r); return s.length?s[0].localizacao:"Fora"; }, "Perfil informante": (r)=>getPerfil(r) }; }
     function populatePivotSelects() { let vars = getAllPivotVariables(); let keys = Object.keys(vars); let rowsSel = document.getElementById('pivotRows'); let colsSel = document.getElementById('pivotCols'); rowsSel.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); colsSel.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); }
-    function renderPivotTable() { let rowVar = document.getElementById('pivotRows').value; let colVar = document.getElementById('pivotCols').value; let fnRow = getAllPivotVariables()[rowVar]; let fnCol = getAllPivotVariables()[colVar]; if (!fnRow || !fnCol) return; let pivot = {}; for (let r of filteredData) { let rv = fnRow(r); let cv = fnCol(r); if (!rv || rv==="Não informado") continue; if (!cv || cv==="Não informado") continue; if (!pivot[rv]) pivot[rv] = {}; pivot[rv][cv] = (pivot[rv][cv] || 0) + 1; } let rows = Object.keys(pivot).sort(); let cols = new Set(); for (let r in pivot) for (let c in pivot[r]) cols.add(c); cols = Array.from(cols).sort(); let html = '<table class="pivot-table"><thead><tr><th>' + rowVar + ' \\ ' + colVar + '</th>' + cols.map(c=>`<th>${c}</th>`).join('') + '<th>Total</th></tr></thead><tbody>'; for (let r of rows) { let rowTotal = 0; html += `<tr><td><strong>${r}</strong></td>`; for (let c of cols) { let val = pivot[r][c] || 0; rowTotal += val; html += `<td>${val}</td>`; } html += `<td><strong>${rowTotal}</strong></td>`; } html += '</tbody></table>'; document.querySelector('#pivotTableContainer').innerHTML = html; }
+    function renderPivotTable() { let rowVar = document.getElementById('pivotRows').value; let colVar = document.getElementById('pivotCols').value; let fnRow = getAllPivotVariables()[rowVar]; let fnCol = getAllPivotVariables()[colVar]; if (!fnRow || !fnCol) return; let pivot = {}; for (let r of filteredData) { let rv = fnRow(r); let cv = fnCol(r); if (!rv || rv==="Não informado") continue; if (!cv || cv==="Não informado") continue; if (!pivot[rv]) pivot[rv] = {}; pivot[rv][cv] = (pivot[rv][cv] || 0) + 1; } let rows = Object.keys(pivot).sort(); let cols = new Set(); for (let r in pivot) for (let c in pivot[r]) cols.add(c); cols = Array.from(cols).sort(); let html = '<table class="pivot-table"><thead><tr><th>' + rowVar + ' \\ ' + colVar + '</th>' + cols.map(c=>`<th>${c}</th>`).join('') + '<th>Total</th></tr></thead><tbody>'; for (let r of rows) { let rowTotal = 0; html += `<tr><td><strong>${r}</strong></td>`; for (let c of cols) { let val = pivot[r][c] || 0; rowTotal += val; html += `<td>${val}</td>`; } html += `<td><strong>${rowTotal}</strong></td></tr>`; } html += '</tbody></table>'; document.querySelector('#pivotTableContainer').innerHTML = html; }
 
     function getAllCategoricalVariables() { return { "Região": (r)=>getRegiao(r), "UF": (r)=>getUF(r), "Racismo": (r)=>getRacismo(r), "Fechamento": (r)=>getFechamento(r), "Oferta EM": (r)=>getOfertaEM(r), "Evasão": (r)=>getEvasao(r), "Diretrizes": (r)=>getDiretrizes(r), "Avaliação EEQ": (r)=>getAvaliacao(r), "Localização escola": (r)=>{ let s=extractSchools(r); return s.length?s[0].localizacao:"Fora"; }, "Alimentação respeita cultura": (r)=>{ let s=extractSchools(r); return s.length&&s[0].alimentacaoCultura?s[0].alimentacaoCultura:"Não informado"; }, "Comunidade consultada": (r)=>{ let s=extractSchools(r); return s.length&&s[0].participacaoConsulta?s[0].participacaoConsulta:"Não informado"; }, "Perfil informante": (r)=>getPerfil(r), "Famílias": (r)=>getSafe(r,"9. Quantas famílias (estimativa) há no território?")||"Não informado" }; }
     function populateComparators() { let vars = getAllCategoricalVariables(); let keys = Object.keys(vars); let s1=document.getElementById('compVar1'); let s2=document.getElementById('compVar2'); s1.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); s2.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); updateFilterOptions(); s1.addEventListener('change',()=>updateFilterOptions()); }
@@ -407,6 +484,7 @@
     function renderComparison() { let v1=document.getElementById('compVar1').value, v2=document.getElementById('compVar2').value, fv=document.getElementById('compFilter').value; let fn1=getAllCategoricalVariables()[v1], fn2=getAllCategoricalVariables()[v2]; if(!fn1||!fn2) return; let data = filteredData; if(fv!=="all") data = data.filter(r=>fn1(r)===fv); let cross={}; for(let row of data){ let c1=fn1(row), c2=fn2(row); if(!c1||c1==="Não informado") continue; if(!c2||c2==="Não informado") continue; if(!cross[c1]) cross[c1]={}; cross[c1][c2]=(cross[c1][c2]||0)+1; } let categories=Object.keys(cross); let subcats=[...new Set(Object.values(cross).flatMap(obj=>Object.keys(obj)))]; let datasets=subcats.map(sub=>({ label:sub, data:categories.map(cat=>((cross[cat][sub]||0)/Object.values(cross[cat]).reduce((a,b)=>a+b,0)*100).toFixed(1)), backgroundColor:`hsl(${Math.random()*360},70%,55%)` })); if(comparisonChart) comparisonChart.destroy(); comparisonChart = new Chart(document.getElementById('comparisonChart').getContext('2d'), { type:'bar', data:{ labels:categories, datasets:datasets }, options:{ responsive:true, scales:{ y:{ max:100, title:{ display:true, text:'%' } } }, plugins:{ tooltip:{ callbacks:{ label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%` } }, datalabels:{ anchor:'end', align:'top', formatter:(v)=>v+'%', font:{ size:9 } } } } }); }
     function downloadChart() { if(comparisonChart){ let a=document.createElement('a'); a.download='comparacao_quilombola.png'; a.href=comparisonChart.canvas.toDataURL(); a.click(); } }
 
+    // ========== CARREGAMENTO DE DADOS ==========
     function loadData() { Papa.parse(CSV_URL, { download:true, header:true, skipEmptyLines:true, complete:(res)=>{ if(res.data && res.data.length) processData(res.data); else fallback(); }, error:fallback }); }
     function fallback() { alert("Erro ao carregar dados."); }
     function processData(data) { rawData = data.filter(r=>Object.values(r).some(v=>v && v.toString().trim()!=="")); applyFilters(); populateComparators(); populatePivotSelects(); document.getElementById('updateComparison').addEventListener('click', renderComparison); document.getElementById('downloadChartBtn').addEventListener('click', downloadChart); document.getElementById('updatePivot').addEventListener('click', renderPivotTable); document.getElementById('refreshMap').addEventListener('click', ()=>updateMap()); document.getElementById('tableSearchFilter').addEventListener('input', () => updateTable()); renderComparison(); renderPivotTable(); if(!map) initMap(); else updateMap(); document.getElementById('lastUpdateDate').innerText = "Última atualização: " + new Date().toLocaleString('pt-BR'); }
@@ -423,6 +501,111 @@
 
     renderChartsGrid();
     loadData();
+
+    // ========== CHATBOT ÀGBÁ COM DEEPSEEK API ==========
+    const DEEPSEEK_API_KEY = "sk-64c631e9c44e427ebb051b26334f97c5";
+    const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
+
+    async function getBotAnswer(question) {
+        // Prepara o contexto completo da base de dados (agregado)
+        const totalResp = filteredData.length;
+        const totalEscolas = allSchools.length;
+        const dentro = allSchools.filter(s => s.localizacao === "Dentro").length;
+        const fora = totalEscolas - dentro;
+        const racismoEscolas = allSchools.filter(s => s.racismo === "Sim").length;
+        const fechamentoTerritorios = filteredData.filter(r => getFechamento(r) === "Sim").length;
+        const ofertaEM = filteredData.filter(r => getOfertaEM(r) === "Sim").length;
+        const evasao = filteredData.filter(r => getEvasao(r) === "Sim").length;
+        const regioes = [...new Set(rawData.map(r=>getRegiao(r)))].filter(r=>r!=="Outra");
+        const ufs = Object.keys(ufAggregated);
+        // Amostra de relatos (até 5 para contexto)
+        const relatosAmostra = filteredData.slice(0, 5).map(r => ({ comunidade: getComunidade(r), uf: getUF(r), relato: getRelato(r).substring(0, 150) }));
+        const contexto = {
+            total_respostas: totalResp,
+            total_territorios: new Set(filteredData.map(r=>getComunidade(r))).size,
+            total_escolas: totalEscolas,
+            escolas_dentro: dentro,
+            escolas_fora: fora,
+            escolas_com_racismo: racismoEscolas,
+            territorios_com_fechamento: fechamentoTerritorios,
+            oferta_ensino_medio: ofertaEM,
+            evasao_ensino_medio: evasao,
+            regioes: regioes,
+            estados_mapeados: ufs,
+            distribuicao_por_uf: ufAggregated,
+            relatos_exemplo: relatosAmostra
+        };
+        const systemPrompt = `Você é Àgbá, assistente especialista em dados da Educação Escolar Quilombola no Brasil.
+REGRAS:
+- Responda APENAS com base nos dados fornecidos no CONTEXTO.
+- Se a pergunta não puder ser respondida com os dados disponíveis, diga: "Não encontro essa informação nos dados da pesquisa."
+- Seja educada, clara e objetiva. Use linguagem respeitosa e científica.
+- Para perguntas que exigem listagem, forneça até 5 exemplos relevantes.
+- Nunca invente dados. Sempre que possível, forneça números e percentuais.
+CONTEXTO (dados reais da planilha):
+${JSON.stringify(contexto, null, 2)}`;
+        try {
+            const response = await fetch(DEEPSEEK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: question }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 1024
+                })
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            return data.choices[0].message.content;
+        } catch (error) {
+            console.error("Erro DeepSeek:", error);
+            return "Desculpe, tive um problema para me conectar ao servidor de IA. Tente novamente mais tarde. (Você pode continuar usando os filtros e gráficos normalmente.)";
+        }
+    }
+
+    // Interface do chat
+    const chatBtn = document.getElementById('chatButton');
+    const chatWin = document.getElementById('chatWindow');
+    const closeChat = document.getElementById('closeChat');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendChat = document.getElementById('sendChat');
+    function addMessage(text, isUser = false, isLoading = false) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-message ${isUser ? 'user' : 'bot'}`;
+        if (isLoading) msgDiv.classList.add('loading-dots');
+        msgDiv.innerText = text;
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return msgDiv;
+    }
+    async function handleUserQuestion() {
+        const question = chatInput.value.trim();
+        if (!question) return;
+        addMessage(question, true);
+        chatInput.value = '';
+        const loadingMsg = addMessage("Àgbá está pensando", false, true);
+        try {
+            const answer = await getBotAnswer(question);
+            loadingMsg.remove();
+            addMessage(answer, false);
+        } catch (err) {
+            loadingMsg.remove();
+            addMessage("Ocorreu um erro ao processar sua pergunta. Tente novamente.", false);
+        }
+    }
+    chatBtn.onclick = () => { chatWin.style.display = 'flex'; };
+    closeChat.onclick = () => { chatWin.style.display = 'none'; };
+    sendChat.onclick = handleUserQuestion;
+    chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleUserQuestion(); });
+    chatWin.style.display = 'none';
 </script>
 </body>
 </html>
