@@ -80,7 +80,7 @@
         .chart-card h3 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
         .chart-card .chart-info { cursor: pointer; background: #f0f0f0; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; }
         canvas { max-height: 320px; width: 100%; }
-        .note { font-size: 0.7rem; color: #2c3e50; text-align: center; margin-top: 12px; background: rgba(255,255,255,0.5); padding: 4px; border-radius: 20px; }
+        .chart-note { font-size: 0.7rem; color: #2c3e50; text-align: center; margin-top: 12px; background: rgba(255,255,255,0.7); padding: 6px; border-radius: 20px; font-style: italic; }
         .map-container { height: 500px; border-radius: 24px; overflow: hidden; margin-top: 16px; border: 1px solid #e2e8f0; }
         .comparator-box, .pivot-box { background: rgba(254,249,230,0.95); border-radius: 24px; padding: 24px; margin: 32px 0; border: 1px solid #ffe2b5; backdrop-filter: blur(2px); }
         .comparator-row, .pivot-row { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 24px; }
@@ -205,7 +205,7 @@
 </head>
 <body>
 <div class="container">
-    <!-- ========== CONTEÚDO PRINCIPAL (IDÊNTICO AO ORIGINAL) ========== -->
+    <!-- ========== CONTEÚDO PRINCIPAL ========== -->
     <div class="hero">
         <div class="hero-text">
             <h1>📚 CENTRAL DE SISTEMATIZAÇÃO DE DADOS:<br>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas (CONAQ)</h1>
@@ -244,7 +244,7 @@
     </div>
     <div class="chart-card" style="padding: 0 0 12px 0;">
         <div class="map-container" id="map"></div>
-        <div class="note">📌 Passe o mouse sobre cada estado para ver indicadores. Cor mais escura = maior valor do indicador.</div>
+        <div class="chart-note">📌 Passe o mouse sobre cada estado para ver indicadores. Cor mais escura = maior valor do indicador selecionado.</div>
     </div>
 
     <div class="comparator-box">
@@ -257,7 +257,7 @@
         </div>
         <canvas id="comparisonChart" height="280"></canvas>
         <button id="downloadChartBtn" class="download-btn">📸 Baixar gráfico como PNG</button>
-        <div class="note">📈 Distribuição percentual da variável de agrupamento dentro de cada categoria da variável principal.</div>
+        <div id="dynamicChartNote" class="chart-note">📈 Distribuição percentual da variável de agrupamento dentro de cada categoria da variável principal.</div>
     </div>
 
     <div class="pivot-box">
@@ -271,7 +271,7 @@
         <div class="pivot-table-wrapper" id="pivotTableContainer">
             <table class="pivot-table"><thead><tr><th>Selecione linhas e colunas</th></tr></thead><tbody><tr><td colspan="2">Clique em "Gerar tabela"</td></tr></tbody></table>
         </div>
-        <div class="note">🔍 Exibe a contagem de respostas cruzando duas variáveis categóricas.</div>
+        <div class="chart-note">🔍 Exibe a contagem de respostas cruzando duas variáveis categóricas.</div>
     </div>
 
     <h2 class="section-title">📈 Indicadores estruturantes</h2>
@@ -296,7 +296,7 @@
         <p><span class="update-date" id="lastUpdateDate">Carregando data...</span> – Dados replicados em tempo real a partir do formulário da Rede Nacional.</p>
         <p><strong>© 2025 – Coordenação Nacional de Articulação das Comunidades Negras Rurais Quilombolas (CONAQ)</strong><br>
         Por meio da <strong>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas</strong>, iniciativa do <strong>Coletivo Nacional de Educação da CONAQ</strong> criada em 2025 para fortalecer a representatividade das comunidades na produção e disseminação do conhecimento, desenvolver novos estudos voltados para a realidade e desigualdades que afetam escolas e estudantes quilombolas, atuar para fomentar os princípios da justiça social por meio de pesquisas comprometidas com os territórios quilombolas, entre outras ações de fortalecimento das comunidades.</p>
-        <p style="font-size:0.7rem; margin-top:16px;"> Versão 10 – com integração chat de IA Àgbá (DeepSeek)</p>
+        <p style="font-size:0.7rem; margin-top:16px;"> Versão 10 – com IA Àgbá (DeepSeek) e legendas nos gráficos</p>
     </div>
 </div>
 
@@ -316,7 +316,7 @@
         <span id="closeChat">✕</span>
     </div>
     <div class="chat-messages" id="chatMessages">
-        <div class="chat-message bot">Olá! Sou Àgbá, agora com inteligência artificial do DeepSeek. Posso responder perguntas detalhadas sobre os dados da Educação Escolar Quilombola com base na planilha completa. Ex: "Liste os 5 territórios com mais relatos de racismo", "Compare fechamento de escolas entre Nordeste e Sudeste", "Qual a média de escolas por território?" etc.</div>
+        <div class="chat-message bot">Olá! Sou Àgbá, com inteligência artificial do DeepSeek. Agora tenho acesso completo aos dados da planilha (agregados e cruzamentos). Posso responder perguntas como: "Qual a relação entre racismo e localização da escola (dentro/fora)?", "Compare fechamento de escolas entre regiões", "Quais estados têm maior evasão?" etc.</div>
     </div>
     <div class="chat-input-area">
         <input type="text" id="chatInput" placeholder="Digite sua pergunta...">
@@ -332,7 +332,7 @@
     let comparisonChart = null;
     let currentFilteredRows = [];
 
-    // ========== FUNÇÕES DE EXTRAÇÃO (IDÊNTICAS AO ORIGINAL) ==========
+    // ========== FUNÇÕES DE EXTRAÇÃO ==========
     function getSafe(row, key) {
         if (!row) return "";
         for (let k in row) {
@@ -414,43 +414,86 @@
     document.querySelector('.close-modal').addEventListener('click',()=>document.getElementById('infoModal').style.display="none");
     window.onclick = function(e) { if(e.target === document.getElementById('infoModal')) document.getElementById('infoModal').style.display="none"; };
 
-    function buildPercentPie(id, dataObj) { if (charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if (!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = total ? (v/total*100).toFixed(1) : 0; charts[id] = new Chart(ctx, { type: 'pie', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: ['#1e4a3b','#e67e22','#3498db','#95a5a6','#e74c3c'] }] }, options: { plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}%` } }, datalabels: { formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } }); }
-    function buildPercentBar(id, dataObj, color='#1e4a3b') { if(charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if(!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = total ? (v/total*100).toFixed(1) : 0; charts[id] = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: color }] }, options: { scales: { y: { max: 100, title: { display: true, text: '%' } } }, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => `${v}%` } } } }); }
+    function buildPercentPie(id, dataObj, legendText) { if (charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if (!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = total ? (v/total*100).toFixed(1) : 0; charts[id] = new Chart(ctx, { type: 'pie', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: ['#1e4a3b','#e67e22','#3498db','#95a5a6','#e74c3c'] }] }, options: { plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}%` } }, datalabels: { formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } }); }
+    function buildPercentBar(id, dataObj, color='#1e4a3b', legendText) { if(charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if(!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = total ? (v/total*100).toFixed(1) : 0; charts[id] = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: color }] }, options: { scales: { y: { max: 100, title: { display: true, text: '%' } } }, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => `${v}%` } } } }); }
 
+    // Legendas descritivas para cada gráfico
     function updateAllCharts() {
-        let regCount={}; filteredData.forEach(r=>{ let rg=getRegiao(r); regCount[rg]=(regCount[rg]||0)+1; }); buildPercentBar('chartRegiao', regCount, '#2c7a5e');
-        let dirCount={}; filteredData.forEach(r=>{ let d=getDiretrizes(r); dirCount[d]=(dirCount[d]||0)+1; }); buildPercentPie('chartDiretrizes', dirCount);
-        let fechCount={}; filteredData.forEach(r=>{ let f=getFechamento(r); fechCount[f]=(fechCount[f]||0)+1; }); buildPercentPie('chartFechamentoGeral', fechCount);
-        let emCount={}; filteredData.forEach(r=>{ let e=getOfertaEM(r); emCount[e]=(emCount[e]||0)+1; }); buildPercentPie('chartOfertaEM', emCount);
-        let evCount={}; filteredData.forEach(r=>{ let e=getEvasao(r); evCount[e]=(evCount[e]||0)+1; }); buildPercentPie('chartEvasaoEM', evCount);
-        let racCount={}; allSchools.forEach(s=>{ racCount[s.racismo]=(racCount[s.racismo]||0)+1; }); buildPercentPie('chartRacismo', racCount);
-        let cultCount={}; allSchools.forEach(s=>{ if(s.alimentacaoCultura) cultCount[s.alimentacaoCultura]=(cultCount[s.alimentacaoCultura]||0)+1; }); buildPercentBar('chartAlimentacaoCultura', cultCount, '#e67e22');
-        let consultaCount={}; allSchools.forEach(s=>{ if(s.participacaoConsulta) consultaCount[s.participacaoConsulta]=(consultaCount[s.participacaoConsulta]||0)+1; }); buildPercentBar('chartConsulta', consultaCount, '#27ae60');
+        // Gráfico 1: Região
+        let regCount={}; filteredData.forEach(r=>{ let rg=getRegiao(r); regCount[rg]=(regCount[rg]||0)+1; });
+        buildPercentBar('chartRegiao', regCount, '#2c7a5e');
+        document.getElementById('chartRegiao')?.parentElement?.querySelector('.chart-note')?.remove();
+        let note1 = document.createElement('div'); note1.className = 'chart-note'; note1.innerText = '🌎 Distribuição das respostas por região do Brasil (percentual sobre total de formulários).';
+        document.getElementById('chartRegiao').parentElement.appendChild(note1);
+
+        let dirCount={}; filteredData.forEach(r=>{ let d=getDiretrizes(r); dirCount[d]=(dirCount[d]||0)+1; });
+        buildPercentPie('chartDiretrizes', dirCount);
+        let note2 = document.createElement('div'); note2.className = 'chart-note'; note2.innerText = '📜 Existência de Diretrizes Curriculares ou documentos oficiais para Educação Escolar Quilombola nos municípios.';
+        document.getElementById('chartDiretrizes').parentElement.appendChild(note2);
+
+        let fechCount={}; filteredData.forEach(r=>{ let f=getFechamento(r); fechCount[f]=(fechCount[f]||0)+1; });
+        buildPercentPie('chartFechamentoGeral', fechCount);
+        let note3 = document.createElement('div'); note3.className = 'chart-note'; note3.innerText = '🏚️ Percentual de territórios que sofreram fechamento, nucleação ou transferência de escolas nos últimos 10 anos.';
+        document.getElementById('chartFechamentoGeral').parentElement.appendChild(note3);
+
+        let emCount={}; filteredData.forEach(r=>{ let e=getOfertaEM(r); emCount[e]=(emCount[e]||0)+1; });
+        buildPercentPie('chartOfertaEM', emCount);
+        let note4 = document.createElement('div'); note4.className = 'chart-note'; note4.innerText = '🎓 Oferta de Ensino Médio dentro ou nas proximidades do território (evita migração forçada dos jovens).';
+        document.getElementById('chartOfertaEM').parentElement.appendChild(note4);
+
+        let evCount={}; filteredData.forEach(r=>{ let e=getEvasao(r); evCount[e]=(evCount[e]||0)+1; });
+        buildPercentPie('chartEvasaoEM', evCount);
+        let note5 = document.createElement('div'); note5.className = 'chart-note'; note5.innerText = '🚫 Evasão de jovens por falta de oferta de Ensino Médio no território ou proximidades.';
+        document.getElementById('chartEvasaoEM').parentElement.appendChild(note5);
+
+        let racCount={}; allSchools.forEach(s=>{ racCount[s.racismo]=(racCount[s.racismo]||0)+1; });
+        buildPercentPie('chartRacismo', racCount);
+        let note6 = document.createElement('div'); note6.className = 'chart-note'; note6.innerText = '⚠️ Escolas com relatos de ocorrência de racismo (entre estudantes, profissionais ou familiares).';
+        document.getElementById('chartRacismo').parentElement.appendChild(note6);
+
+        let cultCount={}; allSchools.forEach(s=>{ if(s.alimentacaoCultura) cultCount[s.alimentacaoCultura]=(cultCount[s.alimentacaoCultura]||0)+1; });
+        buildPercentBar('chartAlimentacaoCultura', cultCount, '#e67e22');
+        let note7 = document.createElement('div'); note7.className = 'chart-note'; note7.innerText = '🍽️ Escolas onde a alimentação escolar respeita a cultura alimentar quilombola.';
+        document.getElementById('chartAlimentacaoCultura').parentElement.appendChild(note7);
+
+        let consultaCount={}; allSchools.forEach(s=>{ if(s.participacaoConsulta) consultaCount[s.participacaoConsulta]=(consultaCount[s.participacaoConsulta]||0)+1; });
+        buildPercentBar('chartConsulta', consultaCount, '#27ae60');
+        let note8 = document.createElement('div'); note8.className = 'chart-note'; note8.innerText = '🤝 Escolas onde a comunidade é consultada em decisões importantes (gestão democrática).';
+        document.getElementById('chartConsulta').parentElement.appendChild(note8);
     }
 
     function renderChartsGrid() {
         const chartsConfig = [
-            { id: 'chartRegiao', title: '🌎 Região', desc: "Distribuição das respostas por região do Brasil." },
-            { id: 'chartDiretrizes', title: '📜 Diretrizes municipais', desc: "Existência de Diretrizes Curriculares para EEQ." },
-            { id: 'chartFechamentoGeral', title: '🏚️ Fechamento/nucleação', desc: "Percentual de territórios que sofreram fechamento nos últimos 10 anos." },
-            { id: 'chartOfertaEM', title: '🎓 Oferta de Ensino Médio', desc: "Oferta de EM dentro ou nas proximidades do território." },
-            { id: 'chartEvasaoEM', title: '🚫 Evasão por falta de EM', desc: "Evasão de jovens por falta de oferta de EM." },
-            { id: 'chartRacismo', title: '⚠️ Racismo na escola', desc: "Relatos de racismo no contexto escolar." },
-            { id: 'chartAlimentacaoCultura', title: '🍽️ Alimentação respeita cultura', desc: "Escolas onde a alimentação respeita a cultura quilombola." },
-            { id: 'chartConsulta', title: '🤝 Comunidade consultada', desc: "Escolas onde a comunidade é consultada em decisões." }
+            { id: 'chartRegiao', title: '🌎 Região' },
+            { id: 'chartDiretrizes', title: '📜 Diretrizes municipais' },
+            { id: 'chartFechamentoGeral', title: '🏚️ Fechamento/nucleação' },
+            { id: 'chartOfertaEM', title: '🎓 Oferta de Ensino Médio' },
+            { id: 'chartEvasaoEM', title: '🚫 Evasão por falta de EM' },
+            { id: 'chartRacismo', title: '⚠️ Racismo na escola' },
+            { id: 'chartAlimentacaoCultura', title: '🍽️ Alimentação respeita cultura' },
+            { id: 'chartConsulta', title: '🤝 Comunidade consultada' }
         ];
         let html = '';
         for (let c of chartsConfig) {
-            html += `<div class="chart-card"><h3>${c.title} <span class="chart-info" onclick="showInfoModalChart('${c.id}','${c.title.replace(/'/g,"\\'")}','${c.desc.replace(/'/g,"\\'")}')">ⓘ</span></h3><canvas id="${c.id}"></canvas></div>`;
+            html += `<div class="chart-card"><h3>${c.title} <span class="chart-info" onclick="showInfoModalChart('${c.id}','${c.title.replace(/'/g,"\\'")}')">ⓘ</span></h3><canvas id="${c.id}"></canvas></div>`;
         }
         document.getElementById('chartsGrid').innerHTML = html;
         updateAllCharts();
     }
 
-    window.showInfoModalChart = function(chartId, title, desc) {
+    window.showInfoModalChart = function(chartId, title) {
         const modal = document.getElementById('infoModal');
         document.getElementById('modalTitle').innerText = `📊 ${title}`;
-        document.getElementById('modalText').innerHTML = `${desc}<br><br><strong>Cálculo:</strong> Baseado nos dados filtrados.`;
+        let desc = '';
+        if (chartId === 'chartRegiao') desc = 'Percentual de respostas por região do Brasil.';
+        else if (chartId === 'chartDiretrizes') desc = 'Existência de documentos oficiais municipais para EEQ.';
+        else if (chartId === 'chartFechamentoGeral') desc = 'Territórios que sofreram fechamento/nucleação nos últimos 10 anos.';
+        else if (chartId === 'chartOfertaEM') desc = 'Oferta de Ensino Médio dentro ou próxima ao território.';
+        else if (chartId === 'chartEvasaoEM') desc = 'Evasão de jovens por falta de oferta de EM.';
+        else if (chartId === 'chartRacismo') desc = 'Escolas com relatos de racismo.';
+        else if (chartId === 'chartAlimentacaoCultura') desc = 'Escolas onde alimentação respeita a cultura quilombola.';
+        else if (chartId === 'chartConsulta') desc = 'Escolas onde comunidade é consultada nas decisões.';
+        document.getElementById('modalText').innerHTML = `${desc}<br><br><strong>Cálculo:</strong> Baseado nos dados filtrados, considerando percentuais sobre o total de respostas ou escolas.`;
         modal.style.display = "flex";
     };
 
@@ -467,7 +510,7 @@
         });
         currentFilteredRows = filtered;
         let tbody = document.querySelector('#dadosTable tbody');
-        if (!currentFilteredRows.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum registro com os filtros atuais.您</td></tr>'; return; }
+        if (!currentFilteredRows.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum registro com os filtros atuais.</td></tr>'; return; }
         let rows = currentFilteredRows.slice(0, 100).map(r => `<tr><td>${(getComunidade(r)||"Não informado").substring(0,65)}</td><td>${getUF(r)}</td><td>${getPerfil(r)}</td><td><small>${getRelato(r).substring(0,200)}</small></td><td><small>${getSugestoes(r).substring(0,200)}</small></td></tr>`).join('');
         tbody.innerHTML = rows;
     }
@@ -476,12 +519,15 @@
 
     function getAllPivotVariables() { return { "Região": (r)=>getRegiao(r), "UF": (r)=>getUF(r), "Racismo": (r)=>getRacismo(r), "Fechamento": (r)=>getFechamento(r), "Oferta EM": (r)=>getOfertaEM(r), "Evasão": (r)=>getEvasao(r), "Diretrizes": (r)=>getDiretrizes(r), "Localização escola": (r)=>{ let s=extractSchools(r); return s.length?s[0].localizacao:"Fora"; }, "Perfil informante": (r)=>getPerfil(r) }; }
     function populatePivotSelects() { let vars = getAllPivotVariables(); let keys = Object.keys(vars); let rowsSel = document.getElementById('pivotRows'); let colsSel = document.getElementById('pivotCols'); rowsSel.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); colsSel.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); }
-    function renderPivotTable() { let rowVar = document.getElementById('pivotRows').value; let colVar = document.getElementById('pivotCols').value; let fnRow = getAllPivotVariables()[rowVar]; let fnCol = getAllPivotVariables()[colVar]; if (!fnRow || !fnCol) return; let pivot = {}; for (let r of filteredData) { let rv = fnRow(r); let cv = fnCol(r); if (!rv || rv==="Não informado") continue; if (!cv || cv==="Não informado") continue; if (!pivot[rv]) pivot[rv] = {}; pivot[rv][cv] = (pivot[rv][cv] || 0) + 1; } let rows = Object.keys(pivot).sort(); let cols = new Set(); for (let r in pivot) for (let c in pivot[r]) cols.add(c); cols = Array.from(cols).sort(); let html = '<table class="pivot-table"><thead><tr><th>' + rowVar + ' \\ ' + colVar + '</th>' + cols.map(c=>`<th>${c}</th>`).join('') + '<th>Total</th></tr></thead><tbody>'; for (let r of rows) { let rowTotal = 0; html += `<tr><td><strong>${r}</strong></td>`; for (let c of cols) { let val = pivot[r][c] || 0; rowTotal += val; html += `<td>${val}</td>`; } html += `<td><strong>${rowTotal}</strong></td></tr>`; } html += '</tbody></table>'; document.querySelector('#pivotTableContainer').innerHTML = html; }
+    function renderPivotTable() { let rowVar = document.getElementById('pivotRows').value; let colVar = document.getElementById('pivotCols').value; let fnRow = getAllPivotVariables()[rowVar]; let fnCol = getAllPivotVariables()[colVar]; if (!fnRow || !fnCol) return; let pivot = {}; for (let r of filteredData) { let rv = fnRow(r); let cv = fnCol(r); if (!rv || rv==="Não informado") continue; if (!cv || cv==="Não informado") continue; if (!pivot[rv]) pivot[rv] = {}; pivot[rv][cv] = (pivot[rv][cv] || 0) + 1; } let rows = Object.keys(pivot).sort(); let cols = new Set(); for (let r in pivot) for (let c in pivot[r]) cols.add(c); cols = Array.from(cols).sort(); let html = '<table class="pivot-table"><thead><tr><th>' + rowVar + ' \\ ' + colVar + '</th>' + cols.map(c=>`<th>${c}</th>`).join('') + '<th>Total</th></tr></thead><tbody>'; for (let r of rows) { let rowTotal = 0; html += `<tr><td><strong>${r}</strong></td>`; for (let c of cols) { let val = pivot[r][c] || 0; rowTotal += val; html += `<td>${val}</td>`; } html += `<td><strong>${rowTotal}</strong></td>`; } html += '</tbody></table>'; document.querySelector('#pivotTableContainer').innerHTML = html; }
 
     function getAllCategoricalVariables() { return { "Região": (r)=>getRegiao(r), "UF": (r)=>getUF(r), "Racismo": (r)=>getRacismo(r), "Fechamento": (r)=>getFechamento(r), "Oferta EM": (r)=>getOfertaEM(r), "Evasão": (r)=>getEvasao(r), "Diretrizes": (r)=>getDiretrizes(r), "Avaliação EEQ": (r)=>getAvaliacao(r), "Localização escola": (r)=>{ let s=extractSchools(r); return s.length?s[0].localizacao:"Fora"; }, "Alimentação respeita cultura": (r)=>{ let s=extractSchools(r); return s.length&&s[0].alimentacaoCultura?s[0].alimentacaoCultura:"Não informado"; }, "Comunidade consultada": (r)=>{ let s=extractSchools(r); return s.length&&s[0].participacaoConsulta?s[0].participacaoConsulta:"Não informado"; }, "Perfil informante": (r)=>getPerfil(r), "Famílias": (r)=>getSafe(r,"9. Quantas famílias (estimativa) há no território?")||"Não informado" }; }
     function populateComparators() { let vars = getAllCategoricalVariables(); let keys = Object.keys(vars); let s1=document.getElementById('compVar1'); let s2=document.getElementById('compVar2'); s1.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); s2.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); updateFilterOptions(); s1.addEventListener('change',()=>updateFilterOptions()); }
     function updateFilterOptions() { let varName = document.getElementById('compVar1').value; let fn = getAllCategoricalVariables()[varName]; if(!fn) return; let cats = new Set(); for(let row of filteredData) { let val = fn(row); if(val && val!=="Não informado") cats.add(val); } let filterSelect = document.getElementById('compFilter'); filterSelect.innerHTML = '<option value="all">Todos</option>' + Array.from(cats).sort().map(c=>`<option value="${c}">${c}</option>`).join(''); }
-    function renderComparison() { let v1=document.getElementById('compVar1').value, v2=document.getElementById('compVar2').value, fv=document.getElementById('compFilter').value; let fn1=getAllCategoricalVariables()[v1], fn2=getAllCategoricalVariables()[v2]; if(!fn1||!fn2) return; let data = filteredData; if(fv!=="all") data = data.filter(r=>fn1(r)===fv); let cross={}; for(let row of data){ let c1=fn1(row), c2=fn2(row); if(!c1||c1==="Não informado") continue; if(!c2||c2==="Não informado") continue; if(!cross[c1]) cross[c1]={}; cross[c1][c2]=(cross[c1][c2]||0)+1; } let categories=Object.keys(cross); let subcats=[...new Set(Object.values(cross).flatMap(obj=>Object.keys(obj)))]; let datasets=subcats.map(sub=>({ label:sub, data:categories.map(cat=>((cross[cat][sub]||0)/Object.values(cross[cat]).reduce((a,b)=>a+b,0)*100).toFixed(1)), backgroundColor:`hsl(${Math.random()*360},70%,55%)` })); if(comparisonChart) comparisonChart.destroy(); comparisonChart = new Chart(document.getElementById('comparisonChart').getContext('2d'), { type:'bar', data:{ labels:categories, datasets:datasets }, options:{ responsive:true, scales:{ y:{ max:100, title:{ display:true, text:'%' } } }, plugins:{ tooltip:{ callbacks:{ label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%` } }, datalabels:{ anchor:'end', align:'top', formatter:(v)=>v+'%', font:{ size:9 } } } } }); }
+    function renderComparison() { let v1=document.getElementById('compVar1').value, v2=document.getElementById('compVar2').value, fv=document.getElementById('compFilter').value; let fn1=getAllCategoricalVariables()[v1], fn2=getAllCategoricalVariables()[v2]; if(!fn1||!fn2) return; let data = filteredData; if(fv!=="all") data = data.filter(r=>fn1(r)===fv); let cross={}; for(let row of data){ let c1=fn1(row), c2=fn2(row); if(!c1||c1==="Não informado") continue; if(!c2||c2==="Não informado") continue; if(!cross[c1]) cross[c1]={}; cross[c1][c2]=(cross[c1][c2]||0)+1; } let categories=Object.keys(cross); let subcats=[...new Set(Object.values(cross).flatMap(obj=>Object.keys(obj)))]; let datasets=subcats.map(sub=>({ label:sub, data:categories.map(cat=>((cross[cat][sub]||0)/Object.values(cross[cat]).reduce((a,b)=>a+b,0)*100).toFixed(1)), backgroundColor:`hsl(${Math.random()*360},70%,55%)` })); if(comparisonChart) comparisonChart.destroy(); comparisonChart = new Chart(document.getElementById('comparisonChart').getContext('2d'), { type:'bar', data:{ labels:categories, datasets:datasets }, options:{ responsive:true, scales:{ y:{ max:100, title:{ display:true, text:'%' } } }, plugins:{ tooltip:{ callbacks:{ label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%` } }, datalabels:{ anchor:'end', align:'top', formatter:(v)=>v+'%', font:{ size:9 } } } } }); // atualiza legenda dinâmica
+        const noteDiv = document.getElementById('dynamicChartNote');
+        if (noteDiv) noteDiv.innerText = `📈 Distribuição percentual de "${v2}" dentro de cada categoria de "${v1}"${fv !== 'all' ? ` (filtrado por ${v1} = ${fv})` : ''}.`;
+    }
     function downloadChart() { if(comparisonChart){ let a=document.createElement('a'); a.download='comparacao_quilombola.png'; a.href=comparisonChart.canvas.toDataURL(); a.click(); } }
 
     // ========== CARREGAMENTO DE DADOS ==========
@@ -502,48 +548,75 @@
     renderChartsGrid();
     loadData();
 
-    // ========== CHATBOT ÀGBÁ COM DEEPSEEK API ==========
+    // ========== CHATBOT ÀGBÁ COM ACESSO TOTAL AOS DADOS (CRUZAMENTOS COMPLETOS) ==========
     const DEEPSEEK_API_KEY = "sk-64c631e9c44e427ebb051b26334f97c5";
     const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
 
     async function getBotAnswer(question) {
-        // Prepara o contexto completo da base de dados (agregado)
+        // Constrói um contexto rico com cruzamentos entre variáveis principais
+        // 1. Cruzamento localização x racismo (o que o usuário pediu)
+        const dentroRacismo = allSchools.filter(s => s.localizacao === "Dentro" && s.racismo === "Sim").length;
+        const dentroTotal = allSchools.filter(s => s.localizacao === "Dentro").length;
+        const foraRacismo = allSchools.filter(s => s.localizacao === "Fora" && s.racismo === "Sim").length;
+        const foraTotal = allSchools.filter(s => s.localizacao === "Fora").length;
+        const percRacismoDentro = dentroTotal ? (dentroRacismo / dentroTotal * 100).toFixed(1) : 0;
+        const percRacismoFora = foraTotal ? (foraRacismo / foraTotal * 100).toFixed(1) : 0;
+
+        // 2. Cruzamento localização x fechamento
+        const dentroFechamento = allSchools.filter(s => s.localizacao === "Dentro" && s.fechamento === "Sim").length;
+        const foraFechamento = allSchools.filter(s => s.localizacao === "Fora" && s.fechamento === "Sim").length;
+        const percFechamentoDentro = dentroTotal ? (dentroFechamento / dentroTotal * 100).toFixed(1) : 0;
+        const percFechamentoFora = foraTotal ? (foraFechamento / foraTotal * 100).toFixed(1) : 0;
+
+        // 3. Cruzamento região x racismo
+        const regioes = ["Norte", "Nordeste", "Sudeste", "Sul", "Centro-Oeste"];
+        let regiaoRacismo = {};
+        for (let reg of regioes) {
+            let escolasRegiao = allSchools.filter(s => getRegiao(filteredData.find(r => s.comunidade === getComunidade(r))) === reg);
+            let racismoReg = escolasRegiao.filter(s => s.racismo === "Sim").length;
+            regiaoRacismo[reg] = escolasRegiao.length ? (racismoReg / escolasRegiao.length * 100).toFixed(1) : 0;
+        }
+
+        // 4. Cruzamento oferta EM x evasão
+        const comEM = filteredData.filter(r => getOfertaEM(r) === "Sim");
+        const semEM = filteredData.filter(r => getOfertaEM(r) === "Não");
+        const evasaoComEM = comEM.filter(r => getEvasao(r) === "Sim").length;
+        const evasaoSemEM = semEM.filter(r => getEvasao(r) === "Sim").length;
+        const percEvasaoComEM = comEM.length ? (evasaoComEM / comEM.length * 100).toFixed(1) : 0;
+        const percEvasaoSemEM = semEM.length ? (evasaoSemEM / semEM.length * 100).toFixed(1) : 0;
+
+        // 5. Dados agregados gerais
         const totalResp = filteredData.length;
         const totalEscolas = allSchools.length;
-        const dentro = allSchools.filter(s => s.localizacao === "Dentro").length;
-        const fora = totalEscolas - dentro;
-        const racismoEscolas = allSchools.filter(s => s.racismo === "Sim").length;
-        const fechamentoTerritorios = filteredData.filter(r => getFechamento(r) === "Sim").length;
-        const ofertaEM = filteredData.filter(r => getOfertaEM(r) === "Sim").length;
-        const evasao = filteredData.filter(r => getEvasao(r) === "Sim").length;
-        const regioes = [...new Set(rawData.map(r=>getRegiao(r)))].filter(r=>r!=="Outra");
-        const ufs = Object.keys(ufAggregated);
-        // Amostra de relatos (até 5 para contexto)
-        const relatosAmostra = filteredData.slice(0, 5).map(r => ({ comunidade: getComunidade(r), uf: getUF(r), relato: getRelato(r).substring(0, 150) }));
+        const totalTerritorios = new Set(filteredData.map(r=>getComunidade(r))).size;
+        const racismoTotal = allSchools.filter(s => s.racismo === "Sim").length;
+        const fechamentoTotal = filteredData.filter(r => getFechamento(r) === "Sim").length;
+
         const contexto = {
             total_respostas: totalResp,
-            total_territorios: new Set(filteredData.map(r=>getComunidade(r))).size,
+            total_territorios: totalTerritorios,
             total_escolas: totalEscolas,
-            escolas_dentro: dentro,
-            escolas_fora: fora,
-            escolas_com_racismo: racismoEscolas,
-            territorios_com_fechamento: fechamentoTerritorios,
-            oferta_ensino_medio: ofertaEM,
-            evasao_ensino_medio: evasao,
-            regioes: regioes,
-            estados_mapeados: ufs,
-            distribuicao_por_uf: ufAggregated,
-            relatos_exemplo: relatosAmostra
+            escolas_por_localizacao: { Dentro: dentroTotal, Fora: foraTotal },
+            racismo_por_localizacao: { Dentro: { total: dentroTotal, com_racismo: dentroRacismo, percentual: percRacismoDentro }, Fora: { total: foraTotal, com_racismo: foraRacismo, percentual: percRacismoFora } },
+            fechamento_por_localizacao: { Dentro: { total: dentroTotal, com_fechamento: dentroFechamento, percentual: percFechamentoDentro }, Fora: { total: foraTotal, com_fechamento: foraFechamento, percentual: percFechamentoFora } },
+            racismo_por_regiao: regiaoRacismo,
+            evasao_por_oferta_em: { com_oferta_EM: { total: comEM.length, evasao: evasaoComEM, percentual_evasao: percEvasaoComEM }, sem_oferta_EM: { total: semEM.length, evasao: evasaoSemEM, percentual_evasao: percEvasaoSemEM } },
+            total_racismo_escolas: racismoTotal,
+            total_fechamento_territorios: fechamentoTotal,
+            distribuicao_por_uf: ufAggregated
         };
-        const systemPrompt = `Você é Àgbá, assistente especialista em dados desta Pesquisa da Educação Escolar Quilombola no Brasil.
+
+        const systemPrompt = `Você é Àgbá, assistente especialista em dados da Pesquisa "Panorama da Educação Escolar Quilombola no Brasil".
 REGRAS:
-- Responda APENAS com base nos dados fornecidos no CONTEXTO.
-- Se a pergunta não puder ser respondida com os dados disponíveis, diga: "Não encontro essa informação nos dados da pesquisa ou não tenho acesso a eles."
-- Seja educada, clara e objetiva. Use linguagem respeitosa e científica.
-- Para perguntas que exigem listagem, forneça até 5 exemplos relevantes.
+- Responda APENAS com base nos dados fornecidos no CONTEXTO (que contém cruzamentos completos).
+- Se a pergunta não puder ser respondida com os dados disponíveis, diga: "Não encontro essa informação nos dados da pesquisa."
+- Seja educada, clara, objetiva e use linguagem respeitosa.
+- Para perguntas comparativas (ex: relação entre racismo e localização), use os dados de "racismo_por_localizacao".
+- Para perguntas sobre evasão e oferta de EM, use "evasao_por_oferta_em".
 - Nunca invente dados. Sempre que possível, forneça números e percentuais.
-CONTEXTO (dados reais da planilha):
+CONTEXTO (dados reais da planilha com cruzamentos):
 ${JSON.stringify(contexto, null, 2)}`;
+
         try {
             const response = await fetch(DEEPSEEK_URL, {
                 method: 'POST',
@@ -566,7 +639,7 @@ ${JSON.stringify(contexto, null, 2)}`;
             return data.choices[0].message.content;
         } catch (error) {
             console.error("Erro DeepSeek:", error);
-            return "Desculpe, tive um problema para me conectar ao servidor de IA. Tente novamente mais tarde. (Você pode continuar usando os filtros e gráficos normalmente.)";
+            return "Desculpe, tive um problema para me conectar ao servidor de IA. Tente novamente mais tarde.";
         }
     }
 
