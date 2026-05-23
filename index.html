@@ -373,7 +373,7 @@
     function getLocalizacao(row, idx) { return getSchoolField(row, "Qual a localização desta escola?", idx); }
     function ufToSigla(nome) { const map = { "Acre":"AC","Alagoas":"AL","Amapá":"AP","Amazonas":"AM","Bahia":"BA","Ceará":"CE","Distrito Federal":"DF","Espírito Santo":"ES","Goiás":"GO","Maranhão":"MA","Mato Grosso":"MT","Mato Grosso do Sul":"MS","Minas Gerais":"MG","Pará":"PA","Paraíba":"PB","Paraná":"PR","Pernambuco":"PE","Piauí":"PI","Rio de Janeiro":"RJ","Rio Grande do Norte":"RN","Rio Grande do Sul":"RS","Rondônia":"RO","Roraima":"RR","Santa Catarina":"SC","São Paulo":"SP","Sergipe":"SE","Tocantins":"TO" }; return map[nome] || nome; }
 
-    function extractSchools(row) { let schools = []; for (let i=1; i<=5; i++) { let nome = getSchoolField(row, "Nome da Escola", i); if (nome) { let loc = getLocalizacao(row,i); let dentro = (loc && loc.toLowerCase().includes("própria comunidade")) ? "Dentro" : "Fora"; schools.push({ uf_sigla: ufToSigla(getUF(row)), localizacao: dentro, racismo: getRacismo(row), fechamento: getFechamento(row), ofertaEM: getOfertaEM(row), evasao: getEvasao(row), alimentacaoCultura: getAlimentacaoCultura(row,i), participacaoConsulta: getParticipacaoConsulta(row,i) }); } } return schools; }
+    function extractSchools(row) { let schools = []; for (let i=1; i<=5; i++) { let nome = getSchoolField(row, "Nome da Escola", i); if (nome) { let loc = getLocalizacao(row,i); let dentro = (loc && loc.toLowerCase().includes("própria comunidade")) ? "Dentro" : "Fora"; schools.push({ uf_sigla: ufToSigla(getUF(row)), localizacao: dentro, racismo: getRacismo(row), fechamento: getFechamento(row), ofertaEM: getOfertaEM(row), evasao: getEvasao(row), alimentacaoCultura: getAlimentacaoCultura(row,i), participacaoConsulta: getParticipacaoConsulta(row,i), comunidade: getComunidade(row) }); } } return schools; }
 
     function rebuildAll() { allSchools = []; for (let row of filteredData) allSchools.push(...extractSchools(row)); aggregateUF(); updateKPIs(); updateAllCharts(); updateTable(); if (map) updateMap(); }
 
@@ -417,12 +417,9 @@
     function buildPercentPie(id, dataObj, legendText) { if (charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if (!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = total ? (v/total*100).toFixed(1) : 0; charts[id] = new Chart(ctx, { type: 'pie', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: ['#1e4a3b','#e67e22','#3498db','#95a5a6','#e74c3c'] }] }, options: { plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}%` } }, datalabels: { formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } }); }
     function buildPercentBar(id, dataObj, color='#1e4a3b', legendText) { if(charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if(!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = total ? (v/total*100).toFixed(1) : 0; charts[id] = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: color }] }, options: { scales: { y: { max: 100, title: { display: true, text: '%' } } }, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => `${v}%` } } } }); }
 
-    // Legendas descritivas para cada gráfico
     function updateAllCharts() {
-        // Gráfico 1: Região
         let regCount={}; filteredData.forEach(r=>{ let rg=getRegiao(r); regCount[rg]=(regCount[rg]||0)+1; });
         buildPercentBar('chartRegiao', regCount, '#2c7a5e');
-        document.getElementById('chartRegiao')?.parentElement?.querySelector('.chart-note')?.remove();
         let note1 = document.createElement('div'); note1.className = 'chart-note'; note1.innerText = '🌎 Distribuição das respostas por região do Brasil (percentual sobre total de formulários).';
         document.getElementById('chartRegiao').parentElement.appendChild(note1);
 
@@ -511,7 +508,7 @@
         currentFilteredRows = filtered;
         let tbody = document.querySelector('#dadosTable tbody');
         if (!currentFilteredRows.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum registro com os filtros atuais.</td></tr>'; return; }
-        let rows = currentFilteredRows.slice(0, 100).map(r => `<tr><td>${(getComunidade(r)||"Não informado").substring(0,65)}</td><td>${getUF(r)}</td><td>${getPerfil(r)}</td><td><small>${getRelato(r).substring(0,200)}</small></td><td><small>${getSugestoes(r).substring(0,200)}</small></td></tr>`).join('');
+        let rows = currentFilteredRows.slice(0, 100).map(r => `<tr><td>${(getComunidade(r)||"Não informado").substring(0,65)}</td><td>${getUF(r)}</td><td>${getPerfil(r)}</td><td><small>${getRelato(r).substring(0,200)}</small></td><td><small>${getSugestoes(r).substring(0,200)}</small></td>`).join('');
         tbody.innerHTML = rows;
     }
 
@@ -524,16 +521,27 @@
     function getAllCategoricalVariables() { return { "Região": (r)=>getRegiao(r), "UF": (r)=>getUF(r), "Racismo": (r)=>getRacismo(r), "Fechamento": (r)=>getFechamento(r), "Oferta EM": (r)=>getOfertaEM(r), "Evasão": (r)=>getEvasao(r), "Diretrizes": (r)=>getDiretrizes(r), "Avaliação EEQ": (r)=>getAvaliacao(r), "Localização escola": (r)=>{ let s=extractSchools(r); return s.length?s[0].localizacao:"Fora"; }, "Alimentação respeita cultura": (r)=>{ let s=extractSchools(r); return s.length&&s[0].alimentacaoCultura?s[0].alimentacaoCultura:"Não informado"; }, "Comunidade consultada": (r)=>{ let s=extractSchools(r); return s.length&&s[0].participacaoConsulta?s[0].participacaoConsulta:"Não informado"; }, "Perfil informante": (r)=>getPerfil(r), "Famílias": (r)=>getSafe(r,"9. Quantas famílias (estimativa) há no território?")||"Não informado" }; }
     function populateComparators() { let vars = getAllCategoricalVariables(); let keys = Object.keys(vars); let s1=document.getElementById('compVar1'); let s2=document.getElementById('compVar2'); s1.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); s2.innerHTML = keys.map(k=>`<option value="${k}">${k}</option>`).join(''); updateFilterOptions(); s1.addEventListener('change',()=>updateFilterOptions()); }
     function updateFilterOptions() { let varName = document.getElementById('compVar1').value; let fn = getAllCategoricalVariables()[varName]; if(!fn) return; let cats = new Set(); for(let row of filteredData) { let val = fn(row); if(val && val!=="Não informado") cats.add(val); } let filterSelect = document.getElementById('compFilter'); filterSelect.innerHTML = '<option value="all">Todos</option>' + Array.from(cats).sort().map(c=>`<option value="${c}">${c}</option>`).join(''); }
-    function renderComparison() { let v1=document.getElementById('compVar1').value, v2=document.getElementById('compVar2').value, fv=document.getElementById('compFilter').value; let fn1=getAllCategoricalVariables()[v1], fn2=getAllCategoricalVariables()[v2]; if(!fn1||!fn2) return; let data = filteredData; if(fv!=="all") data = data.filter(r=>fn1(r)===fv); let cross={}; for(let row of data){ let c1=fn1(row), c2=fn2(row); if(!c1||c1==="Não informado") continue; if(!c2||c2==="Não informado") continue; if(!cross[c1]) cross[c1]={}; cross[c1][c2]=(cross[c1][c2]||0)+1; } let categories=Object.keys(cross); let subcats=[...new Set(Object.values(cross).flatMap(obj=>Object.keys(obj)))]; let datasets=subcats.map(sub=>({ label:sub, data:categories.map(cat=>((cross[cat][sub]||0)/Object.values(cross[cat]).reduce((a,b)=>a+b,0)*100).toFixed(1)), backgroundColor:`hsl(${Math.random()*360},70%,55%)` })); if(comparisonChart) comparisonChart.destroy(); comparisonChart = new Chart(document.getElementById('comparisonChart').getContext('2d'), { type:'bar', data:{ labels:categories, datasets:datasets }, options:{ responsive:true, scales:{ y:{ max:100, title:{ display:true, text:'%' } } }, plugins:{ tooltip:{ callbacks:{ label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%` } }, datalabels:{ anchor:'end', align:'top', formatter:(v)=>v+'%', font:{ size:9 } } } } }); // atualiza legenda dinâmica
-        const noteDiv = document.getElementById('dynamicChartNote');
-        if (noteDiv) noteDiv.innerText = `📈 Distribuição percentual de "${v2}" dentro de cada categoria de "${v1}"${fv !== 'all' ? ` (filtrado por ${v1} = ${fv})` : ''}.`;
-    }
+    function renderComparison() { let v1=document.getElementById('compVar1').value, v2=document.getElementById('compVar2').value, fv=document.getElementById('compFilter').value; let fn1=getAllCategoricalVariables()[v1], fn2=getAllCategoricalVariables()[v2]; if(!fn1||!fn2) return; let data = filteredData; if(fv!=="all") data = data.filter(r=>fn1(r)===fv); let cross={}; for(let row of data){ let c1=fn1(row), c2=fn2(row); if(!c1||c1==="Não informado") continue; if(!c2||c2==="Não informado") continue; if(!cross[c1]) cross[c1]={}; cross[c1][c2]=(cross[c1][c2]||0)+1; } let categories=Object.keys(cross); let subcats=[...new Set(Object.values(cross).flatMap(obj=>Object.keys(obj)))]; let datasets=subcats.map(sub=>({ label:sub, data:categories.map(cat=>((cross[cat][sub]||0)/Object.values(cross[cat]).reduce((a,b)=>a+b,0)*100).toFixed(1)), backgroundColor:`hsl(${Math.random()*360},70%,55%)` })); if(comparisonChart) comparisonChart.destroy(); comparisonChart = new Chart(document.getElementById('comparisonChart').getContext('2d'), { type:'bar', data:{ labels:categories, datasets:datasets }, options:{ responsive:true, scales:{ y:{ max:100, title:{ display:true, text:'%' } } }, plugins:{ tooltip:{ callbacks:{ label:(ctx)=>`${ctx.dataset.label}: ${ctx.raw}%` } }, datalabels:{ anchor:'end', align:'top', formatter:(v)=>v+'%', font:{ size:9 } } } } }); const noteDiv = document.getElementById('dynamicChartNote'); if (noteDiv) noteDiv.innerText = `📈 Distribuição percentual de "${v2}" dentro de cada categoria de "${v1}"${fv !== 'all' ? ` (filtrado por ${v1} = ${fv})` : ''}.`; }
     function downloadChart() { if(comparisonChart){ let a=document.createElement('a'); a.download='comparacao_quilombola.png'; a.href=comparisonChart.canvas.toDataURL(); a.click(); } }
 
     // ========== CARREGAMENTO DE DADOS ==========
     function loadData() { Papa.parse(CSV_URL, { download:true, header:true, skipEmptyLines:true, complete:(res)=>{ if(res.data && res.data.length) processData(res.data); else fallback(); }, error:fallback }); }
     function fallback() { alert("Erro ao carregar dados."); }
-    function processData(data) { rawData = data.filter(r=>Object.values(r).some(v=>v && v.toString().trim()!=="")); applyFilters(); populateComparators(); populatePivotSelects(); document.getElementById('updateComparison').addEventListener('click', renderComparison); document.getElementById('downloadChartBtn').addEventListener('click', downloadChart); document.getElementById('updatePivot').addEventListener('click', renderPivotTable); document.getElementById('refreshMap').addEventListener('click', ()=>updateMap()); document.getElementById('tableSearchFilter').addEventListener('input', () => updateTable()); renderComparison(); renderPivotTable(); if(!map) initMap(); else updateMap(); document.getElementById('lastUpdateDate').innerText = "Última atualização: " + new Date().toLocaleString('pt-BR'); }
+    function processData(data) {
+        rawData = data.filter(r=>Object.values(r).some(v=>v && v.toString().trim()!==""));
+        applyFilters();
+        populateComparators();
+        populatePivotSelects();
+        document.getElementById('updateComparison').addEventListener('click', renderComparison);
+        document.getElementById('downloadChartBtn').addEventListener('click', downloadChart);
+        document.getElementById('updatePivot').addEventListener('click', renderPivotTable);
+        document.getElementById('refreshMap').addEventListener('click', ()=>updateMap());
+        document.getElementById('tableSearchFilter').addEventListener('input', () => updateTable());
+        renderComparison();
+        renderPivotTable();
+        if(!map) initMap(); else updateMap();
+        document.getElementById('lastUpdateDate').innerText = "Última atualização: " + new Date().toLocaleString('pt-BR');
+    }
     function applyFilters() { filteredData = rawData.filter(r=>{ if(filterRegiao.value!=="all" && getRegiao(r)!==filterRegiao.value) return false; if(filterUF.value!=="all" && getUF(r)!==filterUF.value) return false; if(filterRacismo.value!=="all" && getRacismo(r)!==filterRacismo.value) return false; if(filterFechamento.value!=="all" && getFechamento(r)!==filterFechamento.value) return false; if(filterEM.value!=="all" && getOfertaEM(r)!==filterEM.value) return false; return true; }); rebuildAll(); updateFiltersDropdown(); if (typeof renderComparison === 'function') renderComparison(); if (typeof renderPivotTable === 'function') renderPivotTable(); }
     function updateFiltersDropdown() { let regioes = [...new Set(rawData.map(r=>getRegiao(r)))].filter(r=>r!=="Outra"); let ufs = [...new Set(rawData.map(r=>getUF(r)))].filter(u=>u!=="Não informado"); let currentRegiao = filterRegiao.value; let currentUF = filterUF.value; filterRegiao.innerHTML = '<option value="all">Todas</option>' + regioes.map(r=>`<option value="${r}">${r}</option>`).join(''); filterUF.innerHTML = '<option value="all">Todos</option>' + ufs.map(u=>`<option value="${u}">${u}</option>`).join(''); if (currentRegiao !== "all" && regioes.includes(currentRegiao)) filterRegiao.value = currentRegiao; else filterRegiao.value = "all"; if (currentUF !== "all" && ufs.includes(currentUF)) filterUF.value = currentUF; else filterUF.value = "all"; }
     function initMap() { map = L.map('map').setView([-14.2,-51.9],4); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' }).addTo(map); updateMap(); }
@@ -548,13 +556,12 @@
     renderChartsGrid();
     loadData();
 
-    // ========== CHATBOT ÀGBÁ COM ACESSO TOTAL AOS DADOS (CRUZAMENTOS COMPLETOS) ==========
+    // ========== CHATBOT ÀGBÁ COM ENVIO RÁPIDO (SEM TRAVAR UI) ==========
     const DEEPSEEK_API_KEY = "sk-64c631e9c44e427ebb051b26334f97c5";
     const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
 
     async function getBotAnswer(question) {
-        // Constrói um contexto rico com cruzamentos entre variáveis principais
-        // 1. Cruzamento localização x racismo (o que o usuário pediu)
+        // Constrói um contexto rico com cruzamentos entre variáveis principais (igual ao original)
         const dentroRacismo = allSchools.filter(s => s.localizacao === "Dentro" && s.racismo === "Sim").length;
         const dentroTotal = allSchools.filter(s => s.localizacao === "Dentro").length;
         const foraRacismo = allSchools.filter(s => s.localizacao === "Fora" && s.racismo === "Sim").length;
@@ -562,22 +569,22 @@
         const percRacismoDentro = dentroTotal ? (dentroRacismo / dentroTotal * 100).toFixed(1) : 0;
         const percRacismoFora = foraTotal ? (foraRacismo / foraTotal * 100).toFixed(1) : 0;
 
-        // 2. Cruzamento localização x fechamento
         const dentroFechamento = allSchools.filter(s => s.localizacao === "Dentro" && s.fechamento === "Sim").length;
         const foraFechamento = allSchools.filter(s => s.localizacao === "Fora" && s.fechamento === "Sim").length;
         const percFechamentoDentro = dentroTotal ? (dentroFechamento / dentroTotal * 100).toFixed(1) : 0;
         const percFechamentoFora = foraTotal ? (foraFechamento / foraTotal * 100).toFixed(1) : 0;
 
-        // 3. Cruzamento região x racismo
         const regioes = ["Norte", "Nordeste", "Sudeste", "Sul", "Centro-Oeste"];
         let regiaoRacismo = {};
         for (let reg of regioes) {
-            let escolasRegiao = allSchools.filter(s => getRegiao(filteredData.find(r => s.comunidade === getComunidade(r))) === reg);
+            let escolasRegiao = allSchools.filter(s => {
+                let row = filteredData.find(r => getComunidade(r) === s.comunidade);
+                return row && getRegiao(row) === reg;
+            });
             let racismoReg = escolasRegiao.filter(s => s.racismo === "Sim").length;
             regiaoRacismo[reg] = escolasRegiao.length ? (racismoReg / escolasRegiao.length * 100).toFixed(1) : 0;
         }
 
-        // 4. Cruzamento oferta EM x evasão
         const comEM = filteredData.filter(r => getOfertaEM(r) === "Sim");
         const semEM = filteredData.filter(r => getOfertaEM(r) === "Não");
         const evasaoComEM = comEM.filter(r => getEvasao(r) === "Sim").length;
@@ -585,7 +592,6 @@
         const percEvasaoComEM = comEM.length ? (evasaoComEM / comEM.length * 100).toFixed(1) : 0;
         const percEvasaoSemEM = semEM.length ? (evasaoSemEM / semEM.length * 100).toFixed(1) : 0;
 
-        // 5. Dados agregados gerais
         const totalResp = filteredData.length;
         const totalEscolas = allSchools.length;
         const totalTerritorios = new Set(filteredData.map(r=>getComunidade(r))).size;
@@ -643,7 +649,7 @@ ${JSON.stringify(contexto, null, 2)}`;
         }
     }
 
-    // Interface do chat
+    // Interface do chat (com alteração para envio rápido)
     const chatBtn = document.getElementById('chatButton');
     const chatWin = document.getElementById('chatWindow');
     const closeChat = document.getElementById('closeChat');
@@ -662,17 +668,22 @@ ${JSON.stringify(contexto, null, 2)}`;
     async function handleUserQuestion() {
         const question = chatInput.value.trim();
         if (!question) return;
+        // Adiciona a mensagem do usuário imediatamente
         addMessage(question, true);
         chatInput.value = '';
+        // Adiciona o indicador de "pensando" e agenda o processamento pesado para não travar a UI
         const loadingMsg = addMessage("Àgbá está pensando", false, true);
-        try {
-            const answer = await getBotAnswer(question);
-            loadingMsg.remove();
-            addMessage(answer, false);
-        } catch (err) {
-            loadingMsg.remove();
-            addMessage("Ocorreu um erro ao processar sua pergunta. Tente novamente.", false);
-        }
+        // Pequeno atraso para permitir a renderização da mensagem e do loading
+        setTimeout(async () => {
+            try {
+                const answer = await getBotAnswer(question);
+                loadingMsg.remove();
+                addMessage(answer, false);
+            } catch (err) {
+                loadingMsg.remove();
+                addMessage("Ocorreu um erro ao processar sua pergunta. Tente novamente.", false);
+            }
+        }, 10);
     }
     chatBtn.onclick = () => { chatWin.style.display = 'flex'; };
     closeChat.onclick = () => { chatWin.style.display = 'none'; };
