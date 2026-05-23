@@ -208,8 +208,8 @@
     <!-- ========== CONTEÚDO PRINCIPAL (IDÊNTICO AO ORIGINAL) ========== -->
     <div class="hero">
         <div class="hero-text">
-            <h1>📚 Central de sistematização de dados<br>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas (CONAQ)</h1>
-            <p>Pesquisa "Panorama da Educação Escolar Quilombola no país" – Dados colaborativos, atualização em tempo real, cruzamentos dinâmicos e transparência pública.</p>
+            <h1>📚 CENTRAL DE SISTEMATIZAÇÂO DE DADOS:<br>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas (CONAQ)</h1>
+            <p>Espaço Colaborativo e interativo, de sistematização de dados da Pesquisa "Panorama da Educação Escolar Quilombola no país" Alimentado por quilombolas, permite o registro contínuo de infromações, geração degraficos e cruzamento de dados Dados colaborativos, atualização em tempo real, cruzamentos dinâmicos com acessibilidade e transparência pública.</p>
             <div class="hero-stats" id="heroStats"></div>
         </div>
         <div class="hero-logos">
@@ -222,7 +222,7 @@
         <div class="filter-group"><label>🌎 Região</label><select id="filterRegiao"><option value="all">Todas</option></select></div>
         <div class="filter-group"><label>📍 UF</label><select id="filterUF"><option value="all">Todos</option></select></div>
         <div class="filter-group"><label>⚠️ Racismo</label><select id="filterRacismo"><option value="all">Todos</option><option value="Sim">Sim</option><option value="Não">Não</option></select></div>
-        <div class="filter-group"><label>🏫 Fechamento</label><select id="filterFechamento"><option value="all">Todos</option><option value="Sim">Houve</option><option value="Não">Não houve</option></select></div>
+        <div class="filter-group"><label>🏫 Fechamento de Escola</label><select id="filterFechamento"><option value="all">Todos</option><option value="Sim">Houve</option><option value="Não">Não houve</option></select></div>
         <div class="filter-group"><label>🎓 Oferta EM</label><select id="filterEM"><option value="all">Todos</option><option value="Sim">Sim</option><option value="Não">Não</option></select></div>
         <div class="filter-group"><button id="resetFilters" class="reset-btn">Limpar filtros</button></div>
     </div>
@@ -296,7 +296,7 @@
         <p><span class="update-date" id="lastUpdateDate">Carregando data...</span> – Dados replicados em tempo real a partir do formulário da Rede Nacional.</p>
         <p><strong>© 2025 – Coordenação Nacional de Articulação das Comunidades Negras Rurais Quilombolas (CONAQ)</strong><br>
         Por meio da <strong>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas</strong>, iniciativa do <strong>Coletivo Nacional de Educação da CONAQ</strong> criada em 2025 para fortalecer a representatividade das comunidades na produção e disseminação do conhecimento, desenvolver novos estudos voltados para a realidade e desigualdades que afetam escolas e estudantes quilombolas, atuar para fomentar os princípios da justiça social por meio de pesquisas comprometidas com os territórios quilombolas, entre outras ações de fortalecimento das comunidades.</p>
-        <p style="font-size:0.7rem; margin-top:16px;"> Versão 9 – com IA Àgbá (DeepSeek)</p>
+        <p style="font-size:0.7rem; margin-top:16px;"> Versão 10 – com integração chat de IA Àgbá (DeepSeek)</p>
     </div>
 </div>
 
@@ -535,10 +535,10 @@
             distribuicao_por_uf: ufAggregated,
             relatos_exemplo: relatosAmostra
         };
-        const systemPrompt = `Você é Àgbá, assistente especialista em dados da Educação Escolar Quilombola no Brasil.
+        const systemPrompt = `Você é Àgbá, assistente especialista em dados desta Pesquisa da Educação Escolar Quilombola no Brasil.
 REGRAS:
 - Responda APENAS com base nos dados fornecidos no CONTEXTO.
-- Se a pergunta não puder ser respondida com os dados disponíveis, diga: "Não encontro essa informação nos dados da pesquisa."
+- Se a pergunta não puder ser respondida com os dados disponíveis, diga: "Não encontro essa informação nos dados da pesquisa ou não tenho acesso a eles."
 - Seja educada, clara e objetiva. Use linguagem respeitosa e científica.
 - Para perguntas que exigem listagem, forneça até 5 exemplos relevantes.
 - Nunca invente dados. Sempre que possível, forneça números e percentuais.
