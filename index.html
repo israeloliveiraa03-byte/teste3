@@ -293,7 +293,7 @@
         <p><span class="update-date" id="lastUpdateDate">Carregando data...</span> – Dados replicados em tempo real a partir do formulário da Rede Nacional.</p>
         <p><strong>© 2025 – Coordenação Nacional de Articulação das Comunidades Negras Rurais Quilombolas (CONAQ)</strong><br>
         Por meio da <strong>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas</strong>, iniciativa do <strong>Coletivo Nacional de Educação da CONAQ</strong> criada em 2025.</p>
-        <p style="font-size:0.7rem; margin-top:16px;"> Versão 13.</p>
+        <p style="font-size:0.7rem; margin-top:16px;"> Versão 15.</p>
     </div>
 </div>
 
@@ -747,10 +747,11 @@
     renderChartsGrid();
     loadData();
 
-    // CHATBOT (preservado)
+    // CHATBOT (AGORA COM DADOS INCLUÍDOS NO PROMPT)
     const DEEPSEEK_API_KEY = "sk-64c631e9c44e427ebb051b26334f97c5";
     const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
     async function getBotAnswer(question) {
+        // Prepara o contexto com dados agregados atuais
         const dentroRacismo = allSchools.filter(s => s.localizacao === "Dentro" && s.racismo === "Sim").length;
         const dentroTotal = allSchools.filter(s => s.localizacao === "Dentro").length;
         const foraRacismo = allSchools.filter(s => s.localizacao === "Fora" && s.racismo === "Sim").length;
@@ -795,7 +796,8 @@
             total_fechamento_territorios: fechamentoTotal,
             distribuicao_por_uf: ufAggregated
         };
-        const systemPrompt = `Você é Àgbá, assistente especialista em dados da Pesquisa "Panorama da Educação Escolar Quilombola no Brasil". Responda apenas com os dados fornecidos.`;
+        // Inclui os dados no prompt da IA
+        const systemPrompt = `Você é Àgbá, assistente especialista em dados da Pesquisa "Panorama da Educação Escolar Quilombola no Brasil". Aqui estão os dados atuais da pesquisa: ${JSON.stringify(contexto)}. Com base nesses dados, responda a pergunta do usuário. Se a pergunta não puder ser respondida com esses dados, diga que não tem informação suficiente.`;
         try {
             const response = await fetch(DEEPSEEK_URL, {
                 method: 'POST',
