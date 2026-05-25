@@ -293,7 +293,7 @@
         <p><span class="update-date" id="lastUpdateDate">Carregando data...</span> – Dados replicados em tempo real a partir do formulário da Rede Nacional.</p>
         <p><strong>© 2025 – Coordenação Nacional de Articulação das Comunidades Negras Rurais Quilombolas (CONAQ)</strong><br>
         Por meio da <strong>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas</strong>, iniciativa do <strong>Coletivo Nacional de Educação da CONAQ</strong> criada em 2025.</p>
-        <p style="font-size:0.7rem; margin-top:16px;"> Versão 15.</p>
+        <p style="font-size:0.7rem; margin-top:16px;"> Versão 15 – Gráficos.</p>
     </div>
 </div>
 
@@ -327,6 +327,7 @@
     let charts = {}, map = null, ufAggregated = {};
     let comparisonChart = null;
     let currentFilteredRows = [];
+    let dataSummary = {}; // objeto global com todos os dados agregados para a IA
 
     // ========== FUNÇÕES DE EXTRAÇÃO ==========
     function getSafe(row, key) {
@@ -401,7 +402,6 @@
     function getQtdEscolasDentro(row) { let q = getSafe(row, "12. Quantas escolas tem DENTRO do território/comunidade quilombola?"); let num = parseInt(q); return isNaN(num) ? null : num; }
     function getLocalizacaoEscolaAgregada(row) { let schools = extractSchools(row); if (schools.length === 0) return ""; let dentro = schools.some(s => s.localizacao === "Dentro"); let fora = schools.some(s => s.localizacao === "Fora"); if (dentro && fora) return "Ambas (dentro e fora)"; if (dentro) return "Apenas dentro"; if (fora) return "Apenas fora"; return ""; }
     
-    // FUNÇÃO CORRIGIDA PARA PROFESSORES QUILOMBOLAS
     function getProfessoresQuilombolas(row, idx) {
         let p = getSchoolField(row, "Há professoras(es) quilombolas que trabalham nesta escola?", idx);
         if (!p) p = findAnswerByKeywords(row, ["professoras quilombolas", "professores quilombolas", "quilombolas que trabalham"], "");
@@ -462,7 +462,7 @@
 
     function extractSchools(row) { let schools = []; for (let i=1; i<=5; i++) { let nome = getSchoolField(row, "Nome da Escola", i); if (nome) { let loc = getLocalizacao(row,i); let dentro = (loc && loc.toLowerCase().includes("própria comunidade")) ? "Dentro" : "Fora"; schools.push({ uf_sigla: ufToSigla(getUF(row)), localizacao: dentro, racismo: getRacismo(row), fechamento: getFechamento(row), ofertaEM: getOfertaEM(row), evasao: getEvasao(row), alimentacaoCultura: getAlimentacaoCultura(row,i), participacaoConsulta: getParticipacaoConsulta(row,i), comunidade: getComunidade(row), relacaoComunidade: getRelacaoComunidade(row,i), materiaisDidaticos: getMateriaisDidaticos(row,i), usaTransporte: getUsaTransporte(row,i), condicoesTransporte: getCondicoesTransporte(row,i), etapas: getEtapasEnsino(row,i), professoresQuilombolas: getProfessoresQuilombolas(row,i) }); } } return schools; }
 
-    function rebuildAll() { allSchools = []; for (let row of filteredData) allSchools.push(...extractSchools(row)); aggregateUF(); updateKPIs(); updateAllCharts(); updateTable(); if (map) updateMap(); }
+    function rebuildAll() { allSchools = []; for (let row of filteredData) allSchools.push(...extractSchools(row)); aggregateUF(); buildDataSummary(); updateKPIs(); updateAllCharts(); updateTable(); if (map) updateMap(); }
 
     function aggregateUF() {
         ufAggregated = {};
@@ -495,6 +495,152 @@
         }
     }
 
+    function buildDataSummary() {
+        const totalFormularios = filteredData.length;
+        const totalEscolas = allSchools.length;
+        const totalTerritorios = new Set(filteredData.map(r=>getComunidade(r))).size;
+
+        // contagens simples
+        const count = (arr, fn) => arr.filter(fn).length;
+        const perc = (part, total) => total ? (part/total*100).toFixed(1) : 0;
+
+        const sum = {
+            total_respostas: totalFormularios,
+            total_territorios: totalTerritorios,
+            total_escolas: totalEscolas,
+            escolas_por_localizacao: {
+                dentro: count(allSchools, s=>s.localizacao==="Dentro"),
+                fora: count(allSchools, s=>s.localizacao==="Fora")
+            },
+            racismo: {
+                sim: count(allSchools, s=>s.racismo==="Sim"),
+                nao: count(allSchools, s=>s.racismo==="Não"),
+                percentual_sim: perc(count(allSchools, s=>s.racismo==="Sim"), totalEscolas)
+            },
+            fechamento: {
+                sim: count(filteredData, r=>getFechamento(r)==="Sim"),
+                nao: count(filteredData, r=>getFechamento(r)==="Não"),
+                percentual_sim: perc(count(filteredData, r=>getFechamento(r)==="Sim"), totalFormularios)
+            },
+            oferta_em: {
+                sim: count(filteredData, r=>getOfertaEM(r)==="Sim"),
+                nao: count(filteredData, r=>getOfertaEM(r)==="Não"),
+                percentual_sim: perc(count(filteredData, r=>getOfertaEM(r)==="Sim"), totalFormularios)
+            },
+            evasao_por_falta_em: {
+                sim: count(filteredData, r=>getEvasao(r)==="Sim"),
+                nao: count(filteredData, r=>getEvasao(r)==="Não"),
+                percentual_sim: perc(count(filteredData, r=>getEvasao(r)==="Sim"), totalFormularios)
+            },
+            diretrizes: {
+                sim: count(filteredData, r=>getDiretrizes(r)==="Sim"),
+                nao_ha: count(filteredData, r=>getDiretrizes(r)==="Não há"),
+                outro: count(filteredData, r=>getDiretrizes(r)==="Outro")
+            },
+            alimentacao_respeita_cultura: {
+                sim: count(allSchools, s=>s.alimentacaoCultura==="Sim"),
+                nao: count(allSchools, s=>s.alimentacaoCultura==="Não"),
+                percentual_sim: perc(count(allSchools, s=>s.alimentacaoCultura==="Sim"), totalEscolas)
+            },
+            comunidade_consultada: {
+                sim: count(allSchools, s=>s.participacaoConsulta==="Sim"),
+                nao: count(allSchools, s=>s.participacaoConsulta==="Não"),
+                percentual_sim: perc(count(allSchools, s=>s.participacaoConsulta==="Sim"), totalEscolas)
+            },
+            concurso_professores_quilombolas: {
+                sim: count(filteredData, r=>getConcurso(r)==="Sim"),
+                nao: count(filteredData, r=>getConcurso(r)==="Não"),
+                percentual_sim: perc(count(filteredData, r=>getConcurso(r)==="Sim"), totalFormularios)
+            },
+            demanda_reabertura: {
+                sim: count(filteredData, r=>getDemandaReabertura(r)==="Sim"),
+                nao: count(filteredData, r=>getDemandaReabertura(r)==="Não"),
+                parcialmente: count(filteredData, r=>getDemandaReabertura(r)==="Parcialmente"),
+                nao_sei: count(filteredData, r=>getDemandaReabertura(r)==="Não sei informar")
+            },
+            acionamento_orgaos: {
+                sim: count(filteredData, r=>getAcionamento(r)==="Sim"),
+                nao: count(filteredData, r=>getAcionamento(r)==="Não"),
+                percentual_sim: perc(count(filteredData, r=>getAcionamento(r)==="Sim"), totalFormularios)
+            },
+            localizacao_escolas_agregado: {
+                apenas_dentro: count(filteredData, r=>getLocalizacaoEscolaAgregada(r)==="Apenas dentro"),
+                apenas_fora: count(filteredData, r=>getLocalizacaoEscolaAgregada(r)==="Apenas fora"),
+                ambas: count(filteredData, r=>getLocalizacaoEscolaAgregada(r)==="Ambas (dentro e fora)")
+            },
+            professores_quilombolas: {
+                sim: count(allSchools, s=>s.professoresQuilombolas==="Sim"),
+                nao: count(allSchools, s=>s.professoresQuilombolas==="Não"),
+                percentual_sim: perc(count(allSchools, s=>s.professoresQuilombolas==="Sim"), totalEscolas)
+            },
+            materiais_didaticos: {
+                sim: count(allSchools, s=>s.materiaisDidaticos==="Sim"),
+                nao: count(allSchools, s=>s.materiaisDidaticos==="Não"),
+                percentual_sim: perc(count(allSchools, s=>s.materiaisDidaticos==="Sim"), totalEscolas)
+            },
+            uso_transporte: {
+                sim: count(allSchools, s=>s.usaTransporte==="Sim"),
+                nao: count(allSchools, s=>s.usaTransporte==="Não"),
+                percentual_sim: perc(count(allSchools, s=>s.usaTransporte==="Sim"), totalEscolas)
+            },
+            condicoes_transporte: {
+                boas: count(allSchools, s=>s.condicoesTransporte==="Boas/adequadas"),
+                regulares: count(allSchools, s=>s.condicoesTransporte==="Regulares"),
+                ruins: count(allSchools, s=>s.condicoesTransporte==="Ruins/precárias")
+            },
+            relacao_profissionais_comunidade: {
+                boa_otima: count(allSchools, s=>s.relacaoComunidade==="Boa/ótima"),
+                regular: count(allSchools, s=>s.relacaoComunidade==="Regular"),
+                ruim_pessima: count(allSchools, s=>s.relacaoComunidade==="Ruim/péssima")
+            },
+            motivos_interrupcao: {},
+            escolas_dentro_distribuicao: {},
+            etapas_ensino: {},
+            distribuicao_por_regiao: {},
+            distribuicao_por_uf: ufAggregated
+        };
+
+        // motivos de interrupção (múltipla escolha)
+        let motivosMap = {};
+        filteredData.forEach(r => {
+            let motivos = getMotivosInterrupcao(r);
+            motivos.forEach(m => { if(m) motivosMap[m] = (motivosMap[m]||0)+1; });
+        });
+        for (let [motivo, cnt] of Object.entries(motivosMap)) {
+            sum.motivos_interrupcao[motivo] = { contagem: cnt, percentual_sobre_formularios: perc(cnt, totalFormularios) };
+        }
+
+        // distribuição de escolas dentro (contagem por território)
+        let dentroDist = {};
+        filteredData.forEach(r => {
+            let qtd = getQtdEscolasDentro(r);
+            if (qtd !== null && qtd >= 0) {
+                let key = qtd.toString();
+                dentroDist[key] = (dentroDist[key]||0)+1;
+            }
+        });
+        sum.escolas_dentro_distribuicao = dentroDist;
+
+        // etapas de ensino (múltipla escolha sobre escolas)
+        let etapasMap = {};
+        allSchools.forEach(s => {
+            s.etapas.forEach(etapa => { if(etapa) etapasMap[etapa] = (etapasMap[etapa]||0)+1; });
+        });
+        for (let [etapa, cnt] of Object.entries(etapasMap)) {
+            sum.etapas_ensino[etapa] = { contagem: cnt, percentual_sobre_escolas: perc(cnt, totalEscolas) };
+        }
+
+        // distribuição por região
+        let regMap = {};
+        filteredData.forEach(r => {
+            let reg = getRegiao(r);
+            if(reg) regMap[reg] = (regMap[reg]||0)+1;
+        });
+        sum.distribuicao_por_regiao = regMap;
+
+        dataSummary = sum;
+    }
+
     function updateKPIs() { 
         let totalResp=filteredData.length, territorios=new Set(filteredData.map(r=>getComunidade(r))).size, totalEscolas=allSchools.length, dentro=allSchools.filter(s=>s.localizacao==="Dentro").length, fora=totalEscolas-dentro, ufs=Object.keys(ufAggregated).length; 
         document.getElementById('heroStats').innerHTML = `<div class="hero-stat" onclick="showInfoModal('respostas')"><span class="number">${totalResp}</span><span class="info-icon">ⓘ</span><div class="label">Respostas</div></div><div class="hero-stat" onclick="showInfoModal('territorios')"><span class="number">${territorios}</span><span class="info-icon">ⓘ</span><div class="label">Territórios</div></div><div class="hero-stat" onclick="showInfoModal('escolas_total')"><span class="number">${totalEscolas}</span><span class="info-icon">ⓘ</span><div class="label">Escolas</div></div><div class="hero-stat" onclick="showInfoModal('escolas_dentro')"><span class="number">${dentro}</span><span class="info-icon">ⓘ</span><div class="label">Escolas DENTRO</div></div><div class="hero-stat" onclick="showInfoModal('escolas_fora')"><span class="number">${fora}</span><span class="info-icon">ⓘ</span><div class="label">Escolas FORA</div></div><div class="hero-stat" onclick="showInfoModal('ufs_mapeadas')"><span class="number">${ufs}</span><span class="info-icon">ⓘ</span><div class="label">UFs mapeadas</div></div>`; 
@@ -519,7 +665,6 @@
     function buildPercentPie(id, dataObj, noteText) { if (charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if (!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); if (total === 0) { ensureNoteContainer(id, "⚠️ Sem dados suficientes para este gráfico."); return; } let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = (v/total*100).toFixed(1); charts[id] = new Chart(ctx, { type: 'pie', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: ['#1e4a3b','#e67e22','#3498db','#95a5a6','#e74c3c','#f1c40f','#2c3e50','#8e44ad'] }] }, options: { plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}%` } }, datalabels: { formatter: (v) => `${v}%`, font: { weight: 'bold' } } } } }); ensureNoteContainer(id, noteText); }
     function buildPercentBar(id, dataObj, color, noteText) { if(charts[id]) charts[id].destroy(); let ctx = document.getElementById(id); if(!ctx) return; let total = Object.values(dataObj).reduce((a,b)=>a+b,0); if (total === 0) { ensureNoteContainer(id, "⚠️ Sem dados suficientes para este gráfico."); return; } let perc = {}; for(let [k,v] of Object.entries(dataObj)) perc[k] = (v/total*100).toFixed(1); charts[id] = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(perc), datasets: [{ data: Object.values(perc), backgroundColor: color }] }, options: { scales: { y: { max: 100, title: { display: true, text: '%' } } }, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => `${v}%` } } } }); ensureNoteContainer(id, noteText); }
     function buildMultiPercentBar(id, dataObj, totalBase, color, noteText) { 
-        // Para múltipla escolha: cada barra representa percentual sobre totalBase (ex: total de escolas)
         if(charts[id]) charts[id].destroy(); 
         let ctx = document.getElementById(id); 
         if(!ctx) return; 
@@ -532,81 +677,63 @@
     function updateAllCharts() {
         let totalFormularios = filteredData.length;
         let totalEscolas = allSchools.length;
-        let totalTerritorios = filteredData.length; // cada linha é um território
+        let totalTerritorios = filteredData.length;
 
-        // 1. Região
         let regCount={}; filteredData.forEach(r=>{ let rg=getRegiao(r); if(rg) regCount[rg]=(regCount[rg]||0)+1; });
         buildPercentBar('chartRegiao', regCount, '#2c7a5e', '🌎 Distribuição das respostas por região do Brasil (percentual sobre total de formulários).');
         
-        // 2. Diretrizes
         let dirCount={}; filteredData.forEach(r=>{ let d=getDiretrizes(r); if(d) dirCount[d]=(dirCount[d]||0)+1; });
         buildPercentPie('chartDiretrizes', dirCount, '📜 Existência de Diretrizes Curriculares ou documentos oficiais para Educação Escolar Quilombola nos municípios.');
         
-        // 3. Fechamento
         let fechCount={}; filteredData.forEach(r=>{ let f=getFechamento(r); if(f) fechCount[f]=(fechCount[f]||0)+1; });
         buildPercentPie('chartFechamentoGeral', fechCount, '🏚️ Percentual de territórios que sofreram fechamento, nucleação ou transferência de escolas nos últimos 10 anos.');
         
-        // 4. Oferta EM
         let emCount={}; filteredData.forEach(r=>{ let e=getOfertaEM(r); if(e) emCount[e]=(emCount[e]||0)+1; });
         buildPercentPie('chartOfertaEM', emCount, '🎓 Oferta de Ensino Médio dentro ou nas proximidades do território (evita migração forçada dos jovens).');
         
-        // 5. Evasão por falta de EM
         let evCount={}; filteredData.forEach(r=>{ let e=getEvasao(r); if(e) evCount[e]=(evCount[e]||0)+1; });
         buildPercentPie('chartEvasaoEM', evCount, '🚫 Jovens param de estudar por não ter o Ensino Médio dentro do território?');
         
-        // 6. Racismo na escola
         let racCount={}; allSchools.forEach(s=>{ if(s.racismo) racCount[s.racismo]=(racCount[s.racismo]||0)+1; });
         buildPercentPie('chartRacismo', racCount, '⚠️ Escolas com relatos de ocorrência de racismo (entre estudantes, profissionais ou familiares).');
         
-        // 7. Alimentação respeita cultura
         let cultCount={}; allSchools.forEach(s=>{ if(s.alimentacaoCultura && s.alimentacaoCultura!=="") cultCount[s.alimentacaoCultura]=(cultCount[s.alimentacaoCultura]||0)+1; });
         buildPercentBar('chartAlimentacaoCultura', cultCount, '#e67e22', '🍽️ Escolas onde a alimentação escolar respeita a cultura alimentar quilombola.');
         
-        // 8. Comunidade consultada
         let consultaCount={}; allSchools.forEach(s=>{ if(s.participacaoConsulta && s.participacaoConsulta!=="") consultaCount[s.participacaoConsulta]=(consultaCount[s.participacaoConsulta]||0)+1; });
         buildPercentBar('chartConsulta', consultaCount, '#27ae60', '🤝 Escolas onde a comunidade é consultada em decisões importantes (gestão democrática).');
         
-        // 9. Concurso para professores quilombolas
         let concursoCount = {}; filteredData.forEach(r => { let c = getConcurso(r); if(c) concursoCount[c] = (concursoCount[c] || 0) + 1; });
         buildPercentPie('chartConcurso', concursoCount, '📋 Municípios que possuem processo seletivo, concurso ou reserva de vagas específicas para professoras(es) quilombolas.');
         
-        // 10. Demanda por reabertura
         let demandaCount = {}; filteredData.forEach(r => { let d = getDemandaReabertura(r); if(d && d!=="Não se aplica") demandaCount[d] = (demandaCount[d] || 0) + 1; });
         buildPercentPie('chartDemandaReabertura', demandaCount, '🔄 Percentual de territórios onde existe demanda comunitária por reabertura/retorno de turmas.');
         
-        // 11. Acionamento de órgãos externos
         let acionamentoCount = {}; filteredData.forEach(r => { let a = getAcionamento(r); if(a) acionamentoCount[a] = (acionamentoCount[a] || 0) + 1; });
         buildPercentPie('chartAcionamento', acionamentoCount, '⚖️ Comunidades que já precisaram acionar órgãos externos (MP, Defensoria etc.) para garantir o direito à educação.');
         
-        // 12. Localização das escolas
         let locCount = {}; filteredData.forEach(r => { let loc = getLocalizacaoEscolaAgregada(r); if(loc) locCount[loc] = (locCount[loc] || 0) + 1; });
         buildPercentPie('chartLocalizacao', locCount, '🏠 Tipologia de localização das escolas que atendem o território (dentro/fora).');
         
-        // 13. Materiais didáticos
         let materiaisCount = {}; allSchools.forEach(s => { if (s.materiaisDidaticos) materiaisCount[s.materiaisDidaticos] = (materiaisCount[s.materiaisDidaticos] || 0) + 1; });
         buildPercentPie('chartMateriaisDidaticos', materiaisCount, '📚 Materiais didáticos incluem história, cultura e saberes quilombolas?');
         
-        // 14. Uso de transporte
         let usaTransporteCount = {}; allSchools.forEach(s => { if (s.usaTransporte) usaTransporteCount[s.usaTransporte] = (usaTransporteCount[s.usaTransporte] || 0) + 1; });
         buildPercentPie('chartUsaTransporte', usaTransporteCount, '🚌 Estudantes da comunidade usam transporte escolar para acessar a escola?');
         
-        // 15. Relação profissionais x comunidade
         let relacaoCount = {}; allSchools.forEach(s => { if (s.relacaoComunidade) relacaoCount[s.relacaoComunidade] = (relacaoCount[s.relacaoComunidade] || 0) + 1; });
         buildPercentPie('chartRelacaoComunidade', relacaoCount, '🤝 Como é a relação entre os profissionais da escola e a comunidade quilombola?');
         
-        // 16. Motivos de interrupção (em % sobre total de formulários, múltipla escolha)
         let motivosCount = {};
         filteredData.forEach(r => { let motivos = getMotivosInterrupcao(r); motivos.forEach(m => { if (m && m!=="") motivosCount[m] = (motivosCount[m] || 0) + 1; }); });
         buildMultiPercentBar('chartMotivos', motivosCount, totalFormularios, '#e74c3c', '🚸 Principais motivos para interrupção dos estudos no Ensino Médio (% dos formulários que citaram cada motivo).');
         
-        // 17. Quantas escolas dentro – exibido como CONTAGEM (valores absolutos)
         let escolasDentroDist = {};
         filteredData.forEach(r => { let qtd = getQtdEscolasDentro(r); if (qtd !== null && qtd >= 0) { let key = qtd.toString(); escolasDentroDist[key] = (escolasDentroDist[key] || 0) + 1; } });
         if (Object.keys(escolasDentroDist).length > 0) {
             if (charts['chartEscolasDentroDist']) charts['chartEscolasDentroDist'].destroy();
             let ctx = document.getElementById('chartEscolasDentroDist');
             if (ctx) {
-                // ordena as chaves como números para o eixo X
                 let sortedKeys = Object.keys(escolasDentroDist).sort((a,b) => parseInt(a) - parseInt(b));
                 let sortedValues = sortedKeys.map(k => escolasDentroDist[k]);
                 charts['chartEscolasDentroDist'] = new Chart(ctx, {
@@ -626,7 +753,6 @@
             ensureNoteContainer('chartEscolasDentroDist', '⚠️ Sem dados');
         }
         
-        // 18. Etapas de ensino (em % sobre total de escolas)
         let etapasCount = { "Educação Infantil":0, "Fundamental I (1º ao 5º)":0, "Fundamental II (6º ao 9º)":0, "Ensino Médio":0, "EJA":0 };
         allSchools.forEach(s => { s.etapas.forEach(etapa => { if (etapasCount[etapa] !== undefined) etapasCount[etapa]++; else etapasCount[etapa] = 1; }); });
         buildMultiPercentBar('chartEtapasEnsino', etapasCount, totalEscolas, '#16a085', '🎓 Etapas de ensino oferecidas pelas escolas (% das escolas que oferecem cada etapa – múltipla escolha).');
@@ -680,7 +806,7 @@
         modal.style.display = "flex";
     };
 
-    function updateTable() { /* mantido igual original */ 
+    function updateTable() { 
         let searchTerm = document.getElementById('tableSearchFilter').value.toLowerCase();
         let filtered = filteredData.filter(row => {
             if (searchTerm === "") return true;
@@ -747,57 +873,14 @@
     renderChartsGrid();
     loadData();
 
-    // CHATBOT (AGORA COM DADOS INCLUÍDOS NO PROMPT)
+    // CHATBOT (COM ACESSO A TODOS OS DADOS AGREGADOS)
     const DEEPSEEK_API_KEY = "sk-64c631e9c44e427ebb051b26334f97c5";
     const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
     async function getBotAnswer(question) {
-        // Prepara o contexto com dados agregados atuais
-        const dentroRacismo = allSchools.filter(s => s.localizacao === "Dentro" && s.racismo === "Sim").length;
-        const dentroTotal = allSchools.filter(s => s.localizacao === "Dentro").length;
-        const foraRacismo = allSchools.filter(s => s.localizacao === "Fora" && s.racismo === "Sim").length;
-        const foraTotal = allSchools.filter(s => s.localizacao === "Fora").length;
-        const percRacismoDentro = dentroTotal ? (dentroRacismo / dentroTotal * 100).toFixed(1) : 0;
-        const percRacismoFora = foraTotal ? (foraRacismo / foraTotal * 100).toFixed(1) : 0;
-        const dentroFechamento = allSchools.filter(s => s.localizacao === "Dentro" && s.fechamento === "Sim").length;
-        const foraFechamento = allSchools.filter(s => s.localizacao === "Fora" && s.fechamento === "Sim").length;
-        const percFechamentoDentro = dentroTotal ? (dentroFechamento / dentroTotal * 100).toFixed(1) : 0;
-        const percFechamentoFora = foraTotal ? (foraFechamento / foraTotal * 100).toFixed(1) : 0;
-        const regioes = ["Norte", "Nordeste", "Sudeste", "Sul", "Centro-Oeste"];
-        let regiaoRacismo = {};
-        for (let reg of regioes) {
-            let escolasRegiao = allSchools.filter(s => {
-                let row = filteredData.find(r => getComunidade(r) === s.comunidade);
-                return row && getRegiao(row) === reg;
-            });
-            let racismoReg = escolasRegiao.filter(s => s.racismo === "Sim").length;
-            regiaoRacismo[reg] = escolasRegiao.length ? (racismoReg / escolasRegiao.length * 100).toFixed(1) : 0;
+        if (!dataSummary || Object.keys(dataSummary).length === 0) {
+            return "Os dados ainda estão sendo carregados. Tente novamente em instantes.";
         }
-        const comEM = filteredData.filter(r => getOfertaEM(r) === "Sim");
-        const semEM = filteredData.filter(r => getOfertaEM(r) === "Não");
-        const evasaoComEM = comEM.filter(r => getEvasao(r) === "Sim").length;
-        const evasaoSemEM = semEM.filter(r => getEvasao(r) === "Sim").length;
-        const percEvasaoComEM = comEM.length ? (evasaoComEM / comEM.length * 100).toFixed(1) : 0;
-        const percEvasaoSemEM = semEM.length ? (evasaoSemEM / semEM.length * 100).toFixed(1) : 0;
-        const totalResp = filteredData.length;
-        const totalEscolas = allSchools.length;
-        const totalTerritorios = new Set(filteredData.map(r=>getComunidade(r))).size;
-        const racismoTotal = allSchools.filter(s => s.racismo === "Sim").length;
-        const fechamentoTotal = filteredData.filter(r => getFechamento(r) === "Sim").length;
-        const contexto = {
-            total_respostas: totalResp,
-            total_territorios: totalTerritorios,
-            total_escolas: totalEscolas,
-            escolas_por_localizacao: { Dentro: dentroTotal, Fora: foraTotal },
-            racismo_por_localizacao: { Dentro: { total: dentroTotal, com_racismo: dentroRacismo, percentual: percRacismoDentro }, Fora: { total: foraTotal, com_racismo: foraRacismo, percentual: percRacismoFora } },
-            fechamento_por_localizacao: { Dentro: { total: dentroTotal, com_fechamento: dentroFechamento, percentual: percFechamentoDentro }, Fora: { total: foraTotal, com_fechamento: foraFechamento, percentual: percFechamentoFora } },
-            racismo_por_regiao: regiaoRacismo,
-            evasao_por_oferta_em: { com_oferta_EM: { total: comEM.length, evasao: evasaoComEM, percentual_evasao: percEvasaoComEM }, sem_oferta_EM: { total: semEM.length, evasao: evasaoSemEM, percentual_evasao: percEvasaoSemEM } },
-            total_racismo_escolas: racismoTotal,
-            total_fechamento_territorios: fechamentoTotal,
-            distribuicao_por_uf: ufAggregated
-        };
-        // Inclui os dados no prompt da IA
-        const systemPrompt = `Você é Àgbá, assistente especialista em dados da Pesquisa "Panorama da Educação Escolar Quilombola no Brasil". Aqui estão os dados atuais da pesquisa: ${JSON.stringify(contexto)}. Com base nesses dados, responda a pergunta do usuário. Se a pergunta não puder ser respondida com esses dados, diga que não tem informação suficiente.`;
+        const systemPrompt = `Você é Àgbá, assistente especialista em dados da Pesquisa "Panorama da Educação Escolar Quilombola no Brasil". Aqui estão TODOS os dados agregados atuais da plataforma: ${JSON.stringify(dataSummary)}. Com base nesses dados, responda a pergunta do usuário de forma clara e objetiva. Se a pergunta não puder ser respondida com esses dados, diga educadamente que não tem essa informação.`;
         try {
             const response = await fetch(DEEPSEEK_URL, {
                 method: 'POST',
