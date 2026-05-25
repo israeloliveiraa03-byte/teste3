@@ -308,11 +308,11 @@
 <div class="chat-button" id="chatButton">💬 Àgbá (IA)</div>
 <div class="chat-window" id="chatWindow">
     <div class="chat-header">
-        <span>🧠 Àgbá - assistente da pesquisa</span>
+        <span>🧠 Àgbá - assistente com IA (DeepSeek)</span>
         <span id="closeChat">✕</span>
     </div>
     <div class="chat-messages" id="chatMessages">
-        <div class="chat-message bot">Olá! Sou Àgbá, uma inteligência artificial da central de pesquisa. Tenho acesso a alguns dos dados agregados da pesquisa.</div>
+        <div class="chat-message bot">Olá! Sou Àgbá, com inteligência artificial do DeepSeek. Tenho acesso aos dados agregados da pesquisa.</div>
     </div>
     <div class="chat-input-area">
         <input type="text" id="chatInput" placeholder="Digite sua pergunta...">
@@ -650,8 +650,8 @@
             { id: 'chartUsaTransporte', title: '🚌 Estudantes da comunidade usam transporte escolar para acessar a escola?' },
             { id: 'chartRelacaoComunidade', title: '🤝 Como é a relação entre profissionais da escola e a comunidade?' },
             { id: 'chartMotivos', title: '🚸 Principais motivos para interrupção dos estudos no Ensino Médio' },
-            { id: 'chartEscolasDentroDist', title: '📊 Quantidade de escolas existem DENTRO dos território, de 1 á 5 escolas' },
-            { id: 'chartEtapasEnsino', title: '🎓 Quais etapas de ensino são oferecidas }
+            { id: 'chartEscolasDentroDist', title: '📊 Quantas escolas existem DENTRO do território?' },
+            { id: 'chartEtapasEnsino', title: '🎓 Quais etapas de ensino são oferecidas por esta escola?' }
         ];
         let html = '';
         for (let c of chartsConfig) {
