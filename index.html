@@ -48,8 +48,6 @@
         .hero-stat .number { font-size: 2rem; font-weight: 800; display: inline-block; margin-right: 6px; }
         .hero-stat .info-icon { font-size: 1rem; opacity: 0.8; display: inline-block; cursor: help; }
         .hero-stat .label { font-size: 0.8rem; margin-top: 4px; }
-        .hero-logos { display: flex; gap: 20px; align-items: center; }
-        .hero-logos img { height: 70px; width: auto; background: white; border-radius: 16px; padding: 8px; object-fit: contain; }
         .filters-panel, .map-filters, .table-filters {
             background: rgba(255,255,255,0.95);
             border-radius: 24px;
@@ -177,8 +175,6 @@
             border-radius: 28px;
             padding: 24px;
         }
-        .footer-logos { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; flex-wrap: wrap; }
-        .footer-logos img { height: 60px; width: auto; background: white; border-radius: 12px; padding: 6px; object-fit: contain; }
         .update-date { font-weight: bold; color: #e67e22; }
         .modal {
             display: none;
@@ -292,7 +288,10 @@
             background: #e67e22;
             padding: 0 16px;
         }
-        .loading-dots::after { content: " ..."; animation: blink 1.5s infinite; }
+        .loading-dots::after {
+            content: " ...";
+            animation: blink 1.5s infinite;
+        }
         @keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
     </style>
 </head>
@@ -304,21 +303,21 @@
             <p>Espaço Colaborativo e interativo, de sistematização de dados da Pesquisa "Panorama da Educação Escolar Quilombola no país" Alimentado por quilombolas, permite o registro contínuo de informações, geração de gráficos e cruzamento de dados.</p>
             <div class="hero-stats" id="heroStats"></div>
         </div>
-        <div class="hero-logos">
-            <div style="background: white; border-radius: 16px; padding: 8px 20px;">
-                <span style="color: #1e4a3b; font-weight: bold; font-size: 1.2rem;">CONAQ</span>
+        <div class="hero-logos" style="display: flex; gap: 20px;">
+            <div style="background: white; border-radius: 16px; padding: 8px 16px;">
+                <span style="color: #1e4a3b; font-weight: bold;">CONAQ</span>
             </div>
-            <div style="background: white; border-radius: 16px; padding: 8px 20px;">
-                <span style="color: #1e4a3b; font-weight: bold; font-size: 1.2rem;">Coletivo de Educação</span>
+            <div style="background: white; border-radius: 16px; padding: 8px 16px;">
+                <span style="color: #1e4a3b; font-weight: bold;">Coletivo de Educação</span>
             </div>
         </div>
     </div>
 
-    <div class="filters-panel" id="filtersPanel">
+    <div class="filters-panel">
         <div class="filter-group"><label>🌎 Região</label><select id="filterRegiao"><option value="all">Todas</option></select></div>
         <div class="filter-group"><label>📍 UF</label><select id="filterUF"><option value="all">Todos</option></select></div>
         <div class="filter-group"><label>⚠️ Racismo</label><select id="filterRacismo"><option value="all">Todos</option><option value="Sim">Sim</option><option value="Não">Não</option></select></div>
-        <div class="filter-group"><label>🏫 Fechamento</label><select id="filterFechamento"><option value="all">Todos</option><option value="Sim">Houve</option><option value="Não">Não houve</option></select></div>
+        <div class="filter-group"><label>🏫 Fechamento de Escola</label><select id="filterFechamento"><option value="all">Todos</option><option value="Sim">Houve</option><option value="Não">Não houve</option></select></div>
         <div class="filter-group"><label>🎓 Oferta EM</label><select id="filterEM"><option value="all">Todos</option><option value="Sim">Sim</option><option value="Não">Não</option></select></div>
         <div class="filter-group"><button id="resetFilters" class="reset-btn">Limpar filtros</button></div>
     </div>
@@ -331,7 +330,7 @@
             <option value="perc_indicador_composto">📊 Índice combinado</option>
             <option value="total_respostas">📋 Total de respostas</option>
             <option value="total_escolas">🏫 Total de escolas</option>
-            <option value="escolas_dentro">🏠 Escolas dentro</option>
+            <option value="escolas_dentro">🏠 Escolas dentro do território</option>
             <option value="perc_racismo">⚠️ % Racismo</option>
             <option value="perc_fechamento">🚫 % Fechamento</option>
             <option value="perc_em">🎓 % Oferta EM</option>
@@ -340,27 +339,28 @@
     </div>
     <div class="chart-card" style="padding: 0 0 12px 0;">
         <div class="map-container" id="map"></div>
-        <div class="chart-note">📌 Passe o mouse sobre cada estado para ver indicadores. Cor mais escura = maior valor.</div>
+        <div class="chart-note">📌 Passe o mouse sobre cada estado para ver indicadores. Cor mais escura = maior valor do indicador selecionado.</div>
     </div>
 
     <div class="comparator-box">
         <h3>📊 Gráfico de comparação dinâmica <span class="badge">Percentuais</span></h3>
         <div class="comparator-row">
-            <div class="filter-group"><label>Variável principal</label><select id="compVar1"></select></div>
-            <div class="filter-group"><label>Variável de agrupamento</label><select id="compVar2"></select></div>
+            <div class="filter-group"><label>Variável principal (eixo X)</label><select id="compVar1"></select></div>
+            <div class="filter-group"><label>Variável de agrupamento (cores)</label><select id="compVar2"></select></div>
             <div class="filter-group"><label>Filtro adicional</label><select id="compFilter"><option value="all">Todos</option></select></div>
             <div class="filter-group"><button id="updateComparison">Atualizar</button></div>
         </div>
         <canvas id="comparisonChart" height="280"></canvas>
-        <button id="downloadChartBtn" class="download-btn">📸 Baixar gráfico</button>
-        <div id="dynamicChartNote" class="chart-note">📈 Distribuição percentual</div>
+        <button id="downloadChartBtn" class="download-btn">📸 Baixar gráfico como PNG</button>
+        <div id="dynamicChartNote" class="chart-note">📈 Distribuição percentual da variável de agrupamento dentro de cada categoria da variável principal.</div>
     </div>
 
     <div class="pivot-box">
-        <h3>📊 Tabela Dinâmica <span class="badge">Pivot</span></h3>
+        <h3>📊 Tabela Dinâmica (Pivot) <span class="badge">Similar ao Excel</span></h3>
         <div class="pivot-row">
-            <div class="filter-group"><label>Linhas</label><select id="pivotRows"></select></div>
+            <div class="filter-group"><label>Linhas (índice)</label><select id="pivotRows"></select></div>
             <div class="filter-group"><label>Colunas</label><select id="pivotCols"></select></div>
+            <div class="filter-group"><label>Valor (contagem)</label><select id="pivotVal"><option value="count">Contagem</option></select></div>
             <div class="filter-group"><button id="updatePivot">Gerar tabela</button></div>
         </div>
         <div class="pivot-table-wrapper" id="pivotTableContainer">
@@ -383,17 +383,9 @@
     </div>
 
     <div class="footer">
-        <div class="footer-logos">
-            <div style="background: white; border-radius: 12px; padding: 6px 16px;">
-                <span style="color: #1e4a3b; font-weight: bold;">CONAQ</span>
-            </div>
-            <div style="background: white; border-radius: 12px; padding: 6px 16px;">
-                <span style="color: #1e4a3b; font-weight: bold;">Coletivo de Educação</span>
-            </div>
-        </div>
-        <p><span class="update-date" id="lastUpdateDate">Carregando...</span> – Dados em tempo real do formulário da Rede Nacional.</p>
+        <p><span class="update-date" id="lastUpdateDate">Carregando data...</span> – Dados replicados em tempo real a partir do formulário da Rede Nacional.</p>
         <p><strong>© 2025 – Coordenação Nacional de Articulação das Comunidades Negras Rurais Quilombolas (CONAQ)</strong><br>
-        Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas - Coletivo Nacional de Educação da CONAQ</p>
+        Por meio da <strong>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas</strong>, iniciativa do <strong>Coletivo Nacional de Educação da CONAQ</strong>.</p>
     </div>
 </div>
 
@@ -407,9 +399,12 @@
 
 <div class="chat-button" id="chatButton">💬 Àgbá (IA)</div>
 <div class="chat-window" id="chatWindow">
-    <div class="chat-header"><span>🧠 Àgbá - assistente</span><span id="closeChat">✕</span></div>
+    <div class="chat-header">
+        <span>🧠 Àgbá - assistente com IA</span>
+        <span id="closeChat">✕</span>
+    </div>
     <div class="chat-messages" id="chatMessages">
-        <div class="chat-message bot">Olá! Tenho acesso aos dados da pesquisa. Pergunte sobre indicadores, estatísticas ou peça análises!</div>
+        <div class="chat-message bot">Olá! Sou Àgbá. Tenho acesso aos dados agregados da pesquisa. Pergunte-me sobre estatísticas, indicadores ou faça análises!</div>
     </div>
     <div class="chat-input-area">
         <input type="text" id="chatInput" placeholder="Digite sua pergunta...">
@@ -419,8 +414,6 @@
 
 <script>
     Chart.register(ChartDataLabels);
-    
-    // URL do CSV publicado do Google Sheets (aba "Respostas ao formulário 1")
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTcH5ek5iMwO7EiEZw4WHYJZOcIXRUqSmEtRCXl8X4KNrh0lx7Mhn39bcLumdcIRVknQ6dR2oF80SRl/pub?gid=619019966&single=true&output=csv";
     
     let rawData = [], filteredData = [], allSchools = [];
@@ -428,57 +421,71 @@
     let comparisonChart = null;
     let dataSummary = {};
 
-    // ========== FUNÇÕES DE EXTRAÇÃO BASEADAS NA ESTRUTURA REAL ==========
+    // ========== FUNÇÕES CORRIGIDAS DE EXTRAÇÃO ==========
     
-    function getField(row, colName) {
+    function normalizeString(str) {
+        if (!str) return "";
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                  .toLowerCase()
+                  .replace(/\s+/g, ' ')
+                  .replace(/[^\w\s]/g, '')
+                  .trim();
+    }
+    
+    function getField(row, patterns) {
         if (!row) return "";
-        for (let key in row) {
-            if (key === colName || key.includes(colName)) {
-                let val = row[key];
-                if (val && val.toString().trim() !== "") return val.toString().trim();
+        let patternsArray = Array.isArray(patterns) ? patterns : [patterns];
+        for (let k in row) {
+            let normalizedKey = normalizeString(k);
+            for (let pattern of patternsArray) {
+                let normalizedPattern = normalizeString(pattern);
+                if (normalizedKey.includes(normalizedPattern) || normalizedPattern.includes(normalizedKey)) {
+                    let val = row[k];
+                    if (val && val.toString().trim() !== "") return val.toString().trim();
+                }
             }
         }
         return "";
     }
     
-    function getSchoolField(row, baseName, idx) {
-        // Tenta com índice (ex: "Nome da Escola 2")
-        let withIndex = getField(row, `${baseName} ${idx}`);
-        if (withIndex) return withIndex;
-        // Tenta sem índice (primeira escola)
-        if (idx === 1) return getField(row, baseName);
+    function getSchoolField(row, patterns, idx) {
+        for (let suffix of [` ${idx}`, ` ${idx}.`, `_${idx}`, `-${idx}`, ` ${idx}:`]) {
+            let patternsWithIndex = Array.isArray(patterns) 
+                ? patterns.map(p => p + suffix)
+                : [patterns + suffix];
+            let result = getField(row, patternsWithIndex);
+            if (result) return result;
+        }
+        if (idx === 1) return getField(row, patterns);
         return "";
     }
     
-    // Mapeamento de região
     function getRegiao(row) {
-        let r = getField(row, "4. Identifique a região do país");
+        let r = getField(row, ["4. Identifique a região do país", "região do país"]);
         if (r.includes("Nordeste")) return "Nordeste";
         if (r.includes("Sudeste")) return "Sudeste";
         if (r.includes("Sul")) return "Sul";
         if (r.includes("Centro-Oeste")) return "Centro-Oeste";
         if (r.includes("Norte")) return "Norte";
-        return r;
+        return "";
     }
     
     function getUF(row) {
-        let uf = getField(row, "5. Identifique a Unidade Federativa");
-        return uf;
+        let u = getField(row, ["5. Identifique a Unidade Federativa", "Unidade Federativa"]);
+        return u || "";
     }
     
     function getComunidade(row) {
-        return getField(row, "7. As informações fornecidas neste formulário se referem a qual Território/comunidade Quilombola?") || 
-               getField(row, "território/comunidade Quilombola") || "Não informado";
+        return getField(row, ["7. As informações fornecidas se referem a qual Território", "território/comunidade Quilombola", "Nome do território"]) || "";
     }
     
     function getPerfil(row) {
-        let p = getField(row, "3. Qual é a função ou o papel da pessoa informante");
-        if (p && p.includes(",")) p = p.split(",")[0];
-        return p || "";
+        let p = getField(row, ["3. Qual é a função ou o papel da pessoa informante", "função do informante"]);
+        return p.split(",")[0].trim() || "";
     }
     
-    function getRacismo(row) {
-        let r = getField(row, "Há relatos de ocorrência de racismo no contexto desta escola?");
+    function getRacismoTerritorio(row) {
+        let r = getField(row, ["Há relatos de ocorrência de racismo", "relatos de racismo"]);
         if (!r) return "";
         if (r.toLowerCase().includes("sim")) return "Sim";
         if (r.toLowerCase().includes("não")) return "Não";
@@ -486,7 +493,7 @@
     }
     
     function getFechamento(row) {
-        let f = getField(row, "14. Nos últimos 10 anos houve fechamento de escolas");
+        let f = getField(row, ["14. Nos últimos 10 anos houve fechamento de escolas", "fechamento de escolas", "nucleação"]);
         if (!f) return "";
         if (f.toLowerCase().includes("não houve")) return "Não";
         if (f.toLowerCase().includes("sim")) return "Sim";
@@ -494,7 +501,7 @@
     }
     
     function getOfertaEM(row) {
-        let em = getField(row, "19. É garantida a oferta de Ensino Médio");
+        let em = getField(row, ["19. É garantida a oferta de Ensino Médio", "oferta de Ensino Médio", "evitando a migração forçada"]);
         if (!em) return "";
         if (em.toLowerCase().includes("sim")) return "Sim";
         if (em.toLowerCase().includes("não")) return "Não";
@@ -502,15 +509,15 @@
     }
     
     function getEvasao(row) {
-        let ev = getField(row, "20. Os(as) jovens param de estudar");
+        let ev = getField(row, ["20. Os jovens param de estudar", "param de estudar", "jovens param de estudar"]);
         if (!ev) return "";
-        if (ev.toLowerCase().includes("sim")) return "Sim";
+        if (ev.toLowerCase().includes("sim") || ev.toLowerCase().includes("param")) return "Sim";
         if (ev.toLowerCase().includes("não")) return "Não";
         return "";
     }
     
     function getDiretrizes(row) {
-        let d = getField(row, "10. No seu município há Diretrizes Curriculares");
+        let d = getField(row, ["10. No seu município há Diretrizes Curriculares", "Diretrizes Curriculares", "documento que oriente"]);
         if (!d) return "";
         if (d.toLowerCase().includes("não há")) return "Não há";
         if (d.toLowerCase().includes("sim")) return "Sim";
@@ -518,7 +525,7 @@
     }
     
     function getConcurso(row) {
-        let c = getField(row, "11. No seu município existe processo seletivo, concurso ou reserva de vagas");
+        let c = getField(row, ["11. No seu município existe processo seletivo", "concurso", "reserva de vagas para professoras"]);
         if (!c) return "";
         if (c.toLowerCase().includes("sim")) return "Sim";
         if (c.toLowerCase().includes("não")) return "Não";
@@ -526,7 +533,7 @@
     }
     
     function getDemandaReabertura(row) {
-        let d = getField(row, "16. Existe demanda comunitária por reabertura");
+        let d = getField(row, ["16. Existe demanda comunitária por reabertura", "demanda comunitária", "reabertura"]);
         if (!d) return "";
         if (d.toLowerCase().includes("sim")) return "Sim";
         if (d.toLowerCase().includes("não se aplica")) return "Não se aplica";
@@ -536,31 +543,41 @@
     }
     
     function getAcionamento(row) {
-        let a = getField(row, "17. A comunidade já precisou acionar órgãos externos");
+        let a = getField(row, ["17. A comunidade já precisou acionar órgãos externos", "acionar órgãos externos", "Ministério Público"]);
         if (!a) return "";
         if (a.toLowerCase().includes("sim")) return "Sim";
         if (a.toLowerCase().includes("não")) return "Não";
         return "";
     }
     
-    function getRelato(row) {
-        return getField(row, "18. Caso tenha sim respondido, nos dê mais informações") || 
-               getField(row, "Outros relatos informações sobre o transporte escolar") || "";
+    function getQuantidadeEscolasDentro(row) {
+        let qtd = getField(row, ["12. Quantas escolas tem DENTRO do território", "escolas tem DENTRO"]);
+        if (!qtd) return null;
+        let match = qtd.match(/(\d+)/);
+        if (match) return parseInt(match[0]);
+        if (qtd.toLowerCase().includes("uma") || qtd.includes("01")) return 1;
+        if (qtd.toLowerCase().includes("duas") || qtd.includes("02")) return 2;
+        if (qtd.toLowerCase().includes("três") || qtd.includes("03")) return 3;
+        if (qtd.toLowerCase().includes("quatro") || qtd.includes("04")) return 4;
+        if (qtd.toLowerCase().includes("cinco") || qtd.includes("05")) return 5;
+        return null;
     }
     
-    function getSugestoes(row) {
-        return getField(row, "O que você sugere para melhorar o trabalho pedagógico") || "";
-    }
+    // ========== FUNÇÕES ESPECÍFICAS POR ESCOLA ==========
     
     function getLocalizacaoEscola(row, idx) {
-        let loc = getSchoolField(row, "Qual a localização desta escola?", idx);
+        let loc = getSchoolField(row, ["Qual a localização desta escola", "localização desta escola"], idx);
         if (!loc) return "";
-        if (loc.toLowerCase().includes("própria comunidade")) return "Dentro";
-        return "Fora";
+        if (loc.toLowerCase().includes("própria comunidade")) return "Dentro do território";
+        if (loc.toLowerCase().includes("sede do município")) return "Fora (sede municipal)";
+        if (loc.toLowerCase().includes("outra comunidade quilombola")) return "Fora (outro quilombo)";
+        if (loc.toLowerCase().includes("outra comunidade rural")) return "Fora (área rural não quilombola)";
+        if (loc.toLowerCase().includes("outro município")) return "Fora (outro município)";
+        return loc;
     }
     
     function getRacismoEscola(row, idx) {
-        let r = getSchoolField(row, "Há relatos de ocorrência de racismo no contexto desta escola?", idx);
+        let r = getSchoolField(row, ["Há relatos de ocorrência de racismo no contexto desta escola", "relatos de racismo"], idx);
         if (!r) return "";
         if (r.toLowerCase().includes("sim")) return "Sim";
         if (r.toLowerCase().includes("não")) return "Não";
@@ -568,7 +585,7 @@
     }
     
     function getRelacaoComunidade(row, idx) {
-        let r = getSchoolField(row, "Na sua opinião, como é a relação entre os profissionais da escola e a comunidade", idx);
+        let r = getSchoolField(row, ["Na sua opinião, como é a relação entre os profissionais", "relação entre os profissionais"], idx);
         if (!r) return "";
         let text = r.toLowerCase();
         if (text.includes("muito boa") || text.includes("boa")) return "Boa/ótima";
@@ -578,7 +595,7 @@
     }
     
     function getMateriaisDidaticos(row, idx) {
-        let m = getSchoolField(row, "As aulas e materiais didáticos utilizados nesta escola incluem conteúdos", idx);
+        let m = getSchoolField(row, ["As aulas e materiais didáticos incluem conteúdos", "materiais didáticos"], idx);
         if (!m) return "";
         if (m.toLowerCase().includes("sim")) return "Sim";
         if (m.toLowerCase().includes("não")) return "Não";
@@ -587,15 +604,15 @@
     }
     
     function getAlimentacaoCultura(row, idx) {
-        let a = getSchoolField(row, "A alimentação respeita a cultura alimentar quilombola?", idx);
+        let a = getSchoolField(row, ["A alimentação respeita a cultura alimentar quilombola", "alimentação escolar respeita"], idx);
         if (!a) return "";
-        if (a.toLowerCase().includes("sim")) return "Sim";
-        if (a.toLowerCase().includes("não")) return "Não";
+        if (a.toLowerCase().includes("sim") || a.toLowerCase().includes("concordo")) return "Sim";
+        if (a.toLowerCase().includes("não") || a.toLowerCase().includes("discordo")) return "Não";
         return "";
     }
     
     function getParticipacaoConsulta(row, idx) {
-        let p = getSchoolField(row, "A comunidade é consultada em tomadas de decisão e mudanças importantes na escola?", idx);
+        let p = getSchoolField(row, ["A comunidade é consultada em tomadas de decisão", "comunidade é consultada"], idx);
         if (!p) return "";
         if (p.toLowerCase().includes("sim")) return "Sim";
         if (p.toLowerCase().includes("não")) return "Não";
@@ -604,7 +621,7 @@
     }
     
     function getProfessoresQuilombolas(row, idx) {
-        let p = getSchoolField(row, "Há professoras(es) quilombolas que trabalham nesta escola?", idx);
+        let p = getSchoolField(row, ["Há professoras(es) quilombolas que trabalham", "professoras quilombolas"], idx);
         if (!p) return "";
         if (p.toLowerCase().includes("muitos")) return "Muitos";
         if (p.toLowerCase().includes("alguns")) return "Alguns";
@@ -615,22 +632,32 @@
     }
     
     function getUsaTransporte(row, idx) {
-        let t = getSchoolField(row, "Para acessar esta escola, há estudantes da comunidade que fazem uso de transporte escolar?", idx);
+        let t = getSchoolField(row, ["Para acessar esta escola, há estudantes que fazem uso de transporte", "transporte escolar"], idx);
         if (!t) return "";
         if (t.toLowerCase().includes("sim")) return "Sim";
         if (t.toLowerCase().includes("não")) return "Não";
         return "";
     }
     
+    function getCondicoesTransporte(row, idx) {
+        let c = getSchoolField(row, ["Caso tenham estudantes que façam uso de transporte, quais as condições", "condições desse transporte"], idx);
+        if (!c) return "";
+        let text = c.toLowerCase();
+        if (text.includes("boas") || text.includes("adequado") || text.includes("bom")) return "Boas/adequadas";
+        if (text.includes("regular")) return "Regulares";
+        if (text.includes("ruim") || text.includes("precário")) return "Ruins/precárias";
+        return c;
+    }
+    
     function getEtapasEnsino(row, idx) {
-        let etapas = getSchoolField(row, "Quais etapas de ensino são oferecidas por esta escola?", idx);
+        let etapas = getSchoolField(row, ["Quais etapas de ensino são oferecidas por esta escola", "etapas de ensino"], idx);
         if (!etapas) return [];
         
         let result = [];
         let text = etapas.toLowerCase();
         
-        if (text.includes("creche")) result.push("Creche");
-        if (text.includes("pré-escola")) result.push("Pré-escola");
+        if (text.includes("creche")) result.push("Creche (0-3 anos)");
+        if (text.includes("pré-escola")) result.push("Pré-escola (4-5 anos)");
         if (text.includes("anos iniciais") || text.includes("1º ao 5º")) {
             if (text.includes("multisseriadas")) result.push("Fundamental I - multisseriado");
             else result.push("Fundamental I - regular");
@@ -639,16 +666,16 @@
             if (text.includes("multisseriadas")) result.push("Fundamental II - multisseriado");
             else result.push("Fundamental II - regular");
         }
-        if (text.includes("ensino médio") && !text.includes("profissional") && !text.includes("eja")) result.push("Ensino Médio");
+        if (text.includes("ensino médio") && !text.includes("profissional")) result.push("Ensino Médio");
         if (text.includes("ensino médio") && text.includes("profissional")) result.push("Ensino Médio profissionalizante");
         if (text.includes("eja") || text.includes("jovens e adultos")) result.push("EJA");
         
-        if (result.length === 0 && etapas.trim()) result.push(etapas);
+        if (result.length === 0 && etapas.trim() !== "") result.push(etapas);
         return result;
     }
     
     function getMotivosInterrupcao(row) {
-        let m = getField(row, "21. Principais motivos para interrupção dos estudos no Ensino Médio");
+        let m = getField(row, ["21. Principais motivos para interrupção dos estudos", "motivos para interrupção"]);
         if (!m) return [];
         
         let result = [];
@@ -659,22 +686,19 @@
         if (text.includes("trabalho")) result.push("Trabalho");
         if (text.includes("falta de apoio") || text.includes("financeiro")) result.push("Falta de apoio financeiro");
         if (text.includes("violência") || text.includes("insegurança")) result.push("Violência/insegurança");
-        if (text.includes("internet")) result.push("Falta de internet");
+        if (text.includes("falta de internet")) result.push("Falta de internet");
         if (text.includes("gravidez") || text.includes("cuidado familiar")) result.push("Gravidez/cuidado familiar");
         
-        if (result.length === 0 && m.trim()) result.push(m);
+        if (result.length === 0 && m.trim() !== "") result.push(m);
         return result;
     }
     
-    function getQuantidadeEscolasDentro(row) {
-        let qtd = getField(row, "12. Quantas escolas tem DENTRO do território");
-        if (!qtd) return null;
-        let match = qtd.match(/(\d+)/);
-        if (match) return parseInt(match[0]);
-        if (qtd.toLowerCase().includes("uma") || qtd.includes("01")) return 1;
-        if (qtd.toLowerCase().includes("duas") || qtd.includes("02")) return 2;
-        if (qtd.toLowerCase().includes("três") || qtd.includes("03")) return 3;
-        return null;
+    function getRelato(row) {
+        return getField(row, ["Caso tenha sim respondido, nos dê mais informações sobre fechamento", "mais informações sobre fechamento", "Outros relatos"]) || "";
+    }
+    
+    function getSugestoes(row) {
+        return getField(row, ["O que você sugere para melhorar o trabalho pedagógico", "sugere para melhorar"]) || "";
     }
     
     function ufToSigla(nome) {
@@ -692,12 +716,16 @@
     function extractSchools(row) {
         let schools = [];
         for (let i = 1; i <= 5; i++) {
-            let nome = getSchoolField(row, "Nome da Escola", i);
+            let nome = getSchoolField(row, ["Nome da Escola"], i);
             if (nome && nome !== "") {
+                let localizacao = getLocalizacaoEscola(row, i);
+                let dentro = localizacao.includes("Dentro") ? "Dentro" : "Fora";
+                
                 schools.push({
                     uf_sigla: ufToSigla(getUF(row)),
                     nome: nome,
-                    localizacao: getLocalizacaoEscola(row, i),
+                    localizacao: dentro,
+                    localizacao_detalhe: localizacao,
                     racismo: getRacismoEscola(row, i),
                     relacao_comunidade: getRelacaoComunidade(row, i),
                     materiais_didaticos: getMateriaisDidaticos(row, i),
@@ -705,32 +733,44 @@
                     participacao_consulta: getParticipacaoConsulta(row, i),
                     etapas: getEtapasEnsino(row, i),
                     professores_quilombolas: getProfessoresQuilombolas(row, i),
-                    usa_transporte: getUsaTransporte(row, i)
+                    usa_transporte: getUsaTransporte(row, i),
+                    condicoes_transporte: getCondicoesTransporte(row, i)
                 });
             }
         }
         return schools;
     }
     
+    // ========== FUNÇÕES DE AGREGAÇÃO E VISUALIZAÇÃO ==========
+    
     function aggregateUF() {
         ufAggregated = {};
         for (let s of allSchools) {
             let uf = s.uf_sigla;
-            if (!uf) continue;
-            if (!ufAggregated[uf]) ufAggregated[uf] = { total_escolas: 0, escolas_dentro: 0, racismo_count: 0, fechamento_count: 0, em_count: 0, evasao_count: 0 };
+            if (!uf || uf === "") continue;
+            if (!ufAggregated[uf]) {
+                ufAggregated[uf] = { 
+                    total_escolas: 0, escolas_dentro: 0, racismo_count: 0, 
+                    fechamento_count: 0, em_count: 0, evasao_count: 0 
+                };
+            }
             ufAggregated[uf].total_escolas++;
             if (s.localizacao === "Dentro") ufAggregated[uf].escolas_dentro++;
             if (s.racismo === "Sim") ufAggregated[uf].racismo_count++;
         }
+        
         for (let row of filteredData) {
-            let ufNome = getUF(row), sigla = ufToSigla(ufNome);
-            if (!sigla) continue;
-            if (!ufAggregated[sigla]) ufAggregated[sigla] = {};
-            ufAggregated[sigla].total_respostas = (ufAggregated[sigla].total_respostas || 0) + 1;
-            if (getFechamento(row) === "Sim") ufAggregated[sigla].fechamento_count = (ufAggregated[sigla].fechamento_count || 0) + 1;
-            if (getOfertaEM(row) === "Sim") ufAggregated[sigla].em_count = (ufAggregated[sigla].em_count || 0) + 1;
-            if (getEvasao(row) === "Sim") ufAggregated[sigla].evasao_count = (ufAggregated[sigla].evasao_count || 0) + 1;
+            let ufNome = getUF(row);
+            if (ufNome && ufNome !== "") {
+                let sigla = ufToSigla(ufNome);
+                if (!ufAggregated[sigla]) ufAggregated[sigla] = {};
+                ufAggregated[sigla].total_respostas = (ufAggregated[sigla].total_respostas || 0) + 1;
+                if (getFechamento(row) === "Sim") ufAggregated[sigla].fechamento_count = (ufAggregated[sigla].fechamento_count || 0) + 1;
+                if (getOfertaEM(row) === "Sim") ufAggregated[sigla].em_count = (ufAggregated[sigla].em_count || 0) + 1;
+                if (getEvasao(row) === "Sim") ufAggregated[sigla].evasao_count = (ufAggregated[sigla].evasao_count || 0) + 1;
+            }
         }
+        
         for (let uf in ufAggregated) {
             let d = ufAggregated[uf];
             d.perc_racismo = d.total_escolas ? (d.racismo_count / d.total_escolas * 100).toFixed(1) : 0;
@@ -742,12 +782,15 @@
     }
     
     function buildDataSummary() {
-        let totalForm = filteredData.length;
-        let totalEsc = allSchools.length;
+        let totalFormularios = filteredData.length;
+        let totalEscolas = allSchools.length;
+        
+        const countSim = (arr, prop) => arr.filter(s => s[prop] === "Sim").length;
+        const perc = (part, total) => total ? (part / total * 100).toFixed(1) : 0;
         
         let etapasMap = {};
         allSchools.forEach(s => {
-            s.etapas.forEach(e => { if (e) etapasMap[e] = (etapasMap[e] || 0) + 1; });
+            s.etapas.forEach(etapa => { if (etapa) etapasMap[etapa] = (etapasMap[etapa] || 0) + 1; });
         });
         
         let motivosMap = {};
@@ -756,27 +799,28 @@
         });
         
         dataSummary = {
-            total_formularios: totalForm,
-            total_escolas: totalEsc,
+            total_formularios: totalFormularios,
+            total_escolas: totalEscolas,
+            total_territorios: new Set(filteredData.map(r => getComunidade(r))).size,
             escolas_dentro: allSchools.filter(s => s.localizacao === "Dentro").length,
             escolas_fora: allSchools.filter(s => s.localizacao === "Fora").length,
-            racismo: { sim: allSchools.filter(s => s.racismo === "Sim").length, percentual: (allSchools.filter(s => s.racismo === "Sim").length / totalEsc * 100).toFixed(1) },
-            fechamento: { sim: filteredData.filter(r => getFechamento(r) === "Sim").length, percentual: (filteredData.filter(r => getFechamento(r) === "Sim").length / totalForm * 100).toFixed(1) },
-            oferta_em: { sim: filteredData.filter(r => getOfertaEM(r) === "Sim").length, percentual: (filteredData.filter(r => getOfertaEM(r) === "Sim").length / totalForm * 100).toFixed(1) },
-            evasao: { sim: filteredData.filter(r => getEvasao(r) === "Sim").length, percentual: (filteredData.filter(r => getEvasao(r) === "Sim").length / totalForm * 100).toFixed(1) },
+            racismo: { sim: countSim(allSchools, "racismo"), percentual: perc(countSim(allSchools, "racismo"), totalEscolas) },
+            fechamento: { sim: filteredData.filter(r => getFechamento(r) === "Sim").length, percentual: perc(filteredData.filter(r => getFechamento(r) === "Sim").length, totalFormularios) },
+            oferta_em: { sim: filteredData.filter(r => getOfertaEM(r) === "Sim").length, percentual: perc(filteredData.filter(r => getOfertaEM(r) === "Sim").length, totalFormularios) },
+            evasao: { sim: filteredData.filter(r => getEvasao(r) === "Sim").length, percentual: perc(filteredData.filter(r => getEvasao(r) === "Sim").length, totalFormularios) },
             diretrizes: { sim: filteredData.filter(r => getDiretrizes(r) === "Sim").length, nao: filteredData.filter(r => getDiretrizes(r) === "Não há").length },
-            concurso: { sim: filteredData.filter(r => getConcurso(r) === "Sim").length, percentual: (filteredData.filter(r => getConcurso(r) === "Sim").length / totalForm * 100).toFixed(1) },
+            concurso: { sim: filteredData.filter(r => getConcurso(r) === "Sim").length, percentual: perc(filteredData.filter(r => getConcurso(r) === "Sim").length, totalFormularios) },
             demanda_reabertura: { sim: filteredData.filter(r => getDemandaReabertura(r) === "Sim").length },
-            acionamento: { sim: filteredData.filter(r => getAcionamento(r) === "Sim").length, percentual: (filteredData.filter(r => getAcionamento(r) === "Sim").length / totalForm * 100).toFixed(1) },
-            alimentacao_respeita: { sim: allSchools.filter(s => s.alimentacao_cultura === "Sim").length, percentual: (allSchools.filter(s => s.alimentacao_cultura === "Sim").length / totalEsc * 100).toFixed(1) },
-            comunidade_consultada: { sim: allSchools.filter(s => s.participacao_consulta === "Sim").length, percentual: (allSchools.filter(s => s.participacao_consulta === "Sim").length / totalEsc * 100).toFixed(1) },
-            materiais_didaticos: { sim: allSchools.filter(s => s.materiais_didaticos === "Sim").length, percentual: (allSchools.filter(s => s.materiais_didaticos === "Sim").length / totalEsc * 100).toFixed(1) },
+            acionamento: { sim: filteredData.filter(r => getAcionamento(r) === "Sim").length, percentual: perc(filteredData.filter(r => getAcionamento(r) === "Sim").length, totalFormularios) },
+            alimentacao_respeita: { sim: countSim(allSchools, "alimentacao_cultura"), percentual: perc(countSim(allSchools, "alimentacao_cultura"), totalEscolas) },
+            comunidade_consultada: { sim: allSchools.filter(s => s.participacao_consulta === "Sim").length, percentual: perc(allSchools.filter(s => s.participacao_consulta === "Sim").length, totalEscolas) },
+            materiais_didaticos: { sim: countSim(allSchools, "materiais_didaticos"), percentual: perc(countSim(allSchools, "materiais_didaticos"), totalEscolas) },
             relacao_comunidade: {
                 boa: allSchools.filter(s => s.relacao_comunidade === "Boa/ótima").length,
                 regular: allSchools.filter(s => s.relacao_comunidade === "Regular").length,
                 ruim: allSchools.filter(s => s.relacao_comunidade === "Ruim/péssima").length
             },
-            transporte: { sim: allSchools.filter(s => s.usa_transporte === "Sim").length, percentual: (allSchools.filter(s => s.usa_transporte === "Sim").length / totalEsc * 100).toFixed(1) },
+            transporte: { sim: allSchools.filter(s => s.usa_transporte === "Sim").length, percentual: perc(allSchools.filter(s => s.usa_transporte === "Sim"), totalEscolas) },
             etapas_ensino: etapasMap,
             motivos_interrupcao: motivosMap
         };
@@ -797,19 +841,103 @@
     
     function updateKPIs() {
         document.getElementById('heroStats').innerHTML = `
-            <div class="hero-stat"><span class="number">${filteredData.length}</span><div class="label">Respostas</div></div>
-            <div class="hero-stat"><span class="number">${allSchools.length}</span><div class="label">Escolas</div></div>
-            <div class="hero-stat"><span class="number">${allSchools.filter(s => s.localizacao === "Dentro").length}</span><div class="label">Escolas DENTRO</div></div>
-            <div class="hero-stat"><span class="number">${allSchools.filter(s => s.racismo === "Sim").length}</span><div class="label">Racismo</div></div>
+            <div class="hero-stat" onclick="showInfoModal('respostas')"><span class="number">${filteredData.length}</span><div class="label">Respostas</div></div>
+            <div class="hero-stat" onclick="showInfoModal('escolas_total')"><span class="number">${allSchools.length}</span><div class="label">Escolas</div></div>
+            <div class="hero-stat" onclick="showInfoModal('escolas_dentro')"><span class="number">${allSchools.filter(s => s.localizacao === "Dentro").length}</span><div class="label">Escolas DENTRO</div></div>
+            <div class="hero-stat" onclick="showInfoModal('racismo_relatos')"><span class="number">${allSchools.filter(s => s.racismo === "Sim").length}</span><div class="label">Relatos racismo</div></div>
         `;
+        
         document.getElementById('kpiArea').innerHTML = `
-            <div class="kpi-card"><div class="kpi-number">${filteredData.length}</div><div class="kpi-label">Formulários</div></div>
-            <div class="kpi-card"><div class="kpi-number">${allSchools.length}</div><div class="kpi-label">Total escolas</div></div>
-            <div class="kpi-card"><div class="kpi-number">${allSchools.filter(s => s.localizacao === "Dentro").length}</div><div class="kpi-label">Dentro do território</div></div>
-            <div class="kpi-card"><div class="kpi-number">${allSchools.filter(s => s.localizacao === "Fora").length}</div><div class="kpi-label">Fora do território</div></div>
-            <div class="kpi-card"><div class="kpi-number">${allSchools.filter(s => s.racismo === "Sim").length}</div><div class="kpi-label">Com racismo</div></div>
-            <div class="kpi-card"><div class="kpi-number">${filteredData.filter(r => getFechamento(r) === "Sim").length}</div><div class="kpi-label">Fechamentos</div></div>
+            <div class="kpi-card" onclick="showInfoModal('respostas')"><div class="kpi-number">${filteredData.length}</div><div class="kpi-label">Formulários</div></div>
+            <div class="kpi-card" onclick="showInfoModal('escolas_total')"><div class="kpi-number">${allSchools.length}</div><div class="kpi-label">Total de escolas</div></div>
+            <div class="kpi-card" onclick="showInfoModal('escolas_dentro')"><div class="kpi-number">${allSchools.filter(s => s.localizacao === "Dentro").length}</div><div class="kpi-label">Escolas dentro</div></div>
+            <div class="kpi-card" onclick="showInfoModal('escolas_fora')"><div class="kpi-number">${allSchools.filter(s => s.localizacao === "Fora").length}</div><div class="kpi-label">Escolas fora</div></div>
+            <div class="kpi-card" onclick="showInfoModal('racismo_relatos')"><div class="kpi-number">${allSchools.filter(s => s.racismo === "Sim").length}</div><div class="kpi-label">Com racismo</div></div>
+            <div class="kpi-card" onclick="showInfoModal('fechamento')"><div class="kpi-number">${filteredData.filter(r => getFechamento(r) === "Sim").length}</div><div class="kpi-label">Fechamentos</div></div>
         `;
+    }
+    
+    function updateAllCharts() {
+        let totalForm = filteredData.length;
+        let totalEsc = allSchools.length;
+        
+        // Região
+        let regMap = {};
+        filteredData.forEach(r => { let rg = getRegiao(r); if (rg) regMap[rg] = (regMap[rg] || 0) + 1; });
+        createPieChart('chartRegiao', regMap, 'Distribuição das respostas por região');
+        
+        // Diretrizes
+        let dirMap = {};
+        filteredData.forEach(r => { let d = getDiretrizes(r); if (d) dirMap[d] = (dirMap[d] || 0) + 1; });
+        createPieChart('chartDiretrizes', dirMap, 'Municípios com Diretrizes Curriculares para EEQ');
+        
+        // Fechamento
+        let fechMap = {};
+        filteredData.forEach(r => { let f = getFechamento(r); if (f) fechMap[f] = (fechMap[f] || 0) + 1; });
+        createPieChart('chartFechamentoGeral', fechMap, 'Houve fechamento/nucleação de escolas nos últimos 10 anos?');
+        
+        // Oferta EM
+        let emMap = {};
+        filteredData.forEach(r => { let e = getOfertaEM(r); if (e) emMap[e] = (emMap[e] || 0) + 1; });
+        createPieChart('chartOfertaEM', emMap, 'Oferta de Ensino Médio dentro ou próximo ao território');
+        
+        // Evasão
+        let evMap = {};
+        filteredData.forEach(r => { let e = getEvasao(r); if (e) evMap[e] = (evMap[e] || 0) + 1; });
+        createPieChart('chartEvasaoEM', evMap, 'Jovens param de estudar por falta de EM?');
+        
+        // Racismo nas escolas
+        let racMap = {};
+        allSchools.forEach(s => { if (s.racismo) racMap[s.racismo] = (racMap[s.racismo] || 0) + 1; });
+        createPieChart('chartRacismo', racMap, 'Escolas com relatos de racismo');
+        
+        // Alimentação respeita cultura
+        let alimMap = {};
+        allSchools.forEach(s => { if (s.alimentacao_cultura) alimMap[s.alimentacao_cultura] = (alimMap[s.alimentacao_cultura] || 0) + 1; });
+        createBarChart('chartAlimentacaoCultura', alimMap, 'Alimentação escolar respeita a cultura quilombola?');
+        
+        // Comunidade consultada
+        let consMap = {};
+        allSchools.forEach(s => { if (s.participacao_consulta) consMap[s.participacao_consulta] = (consMap[s.participacao_consulta] || 0) + 1; });
+        createBarChart('chartConsulta', consMap, 'Comunidade é consultada em decisões importantes');
+        
+        // Concurso
+        let concMap = {};
+        filteredData.forEach(r => { let c = getConcurso(r); if (c) concMap[c] = (concMap[c] || 0) + 1; });
+        createPieChart('chartConcurso', concMap, 'Existe concurso ou reserva para professores quilombolas?');
+        
+        // Materiais didáticos
+        let matMap = {};
+        allSchools.forEach(s => { if (s.materiais_didaticos) matMap[s.materiais_didaticos] = (matMap[s.materiais_didaticos] || 0) + 1; });
+        createPieChart('chartMateriaisDidaticos', matMap, 'Materiais incluem história e cultura quilombola?');
+        
+        // Transporte
+        let transMap = {};
+        allSchools.forEach(s => { if (s.usa_transporte) transMap[s.usa_transporte] = (transMap[s.usa_transporte] || 0) + 1; });
+        createPieChart('chartUsaTransporte', transMap, 'Estudantes usam transporte escolar?');
+        
+        // Relação com comunidade
+        let relMap = {};
+        allSchools.forEach(s => { if (s.relacao_comunidade) relMap[s.relacao_comunidade] = (relMap[s.relacao_comunidade] || 0) + 1; });
+        createBarChart('chartRelacaoComunidade', relMap, 'Relação entre profissionais e comunidade');
+        
+        // Motivos interrupção
+        let motMap = {};
+        filteredData.forEach(r => { getMotivosInterrupcao(r).forEach(m => { if (m) motMap[m] = (motMap[m] || 0) + 1; }); });
+        createBarChart('chartMotivos', motMap, 'Motivos para interrupção dos estudos (% dos formulários)', totalForm);
+        
+        // Etapas ensino
+        let etapasMap = {};
+        allSchools.forEach(s => { s.etapas.forEach(e => { if (e) etapasMap[e] = (etapasMap[e] || 0) + 1; }); });
+        createBarChart('chartEtapasEnsino', etapasMap, 'Etapas de ensino oferecidas (% das escolas)', totalEsc);
+        
+        // Escolas dentro por território
+        let dentroDist = {};
+        filteredData.forEach(r => {
+            let qtd = getQuantidadeEscolasDentro(r);
+            if (qtd !== null) dentroDist[qtd.toString()] = (dentroDist[qtd.toString()] || 0) + 1;
+        });
+        createBarChart('chartEscolasDentroDist', dentroDist, 'Quantidade de escolas DENTRO do território', null, 'Nº de territórios');
     }
     
     function createPieChart(id, data, title) {
@@ -818,18 +946,26 @@
         if (charts[id]) charts[id].destroy();
         let total = Object.values(data).reduce((a, b) => a + b, 0);
         if (total === 0) { addNote(ctx, "Sem dados"); return; }
-        charts[id] = new Chart(ctx, { type: 'pie', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#1e4a3b','#e67e22','#3498db','#95a5a6','#e74c3c'] }] }, options: { plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${((ctx.raw / total) * 100).toFixed(1)}%` } }, datalabels: { formatter: (v) => `${((v / total) * 100).toFixed(1)}%`, font: { size: 11 } } } } });
+        charts[id] = new Chart(ctx, {
+            type: 'pie',
+            data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#1e4a3b','#e67e22','#3498db','#95a5a6','#e74c3c'] }] },
+            options: { responsive: true, maintainAspectRatio: true, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${((ctx.raw / total) * 100).toFixed(1)}%` } }, datalabels: { formatter: (v) => `${((v / total) * 100).toFixed(1)}%`, font: { weight: 'bold', size: 11 } } } }
+        });
         addNote(ctx, title);
     }
     
-    function createBarChart(id, data, title, totalBase = null, yLabel = 'Nº') {
+    function createBarChart(id, data, title, totalBase = null, yLabel = '%') {
         let ctx = document.getElementById(id);
         if (!ctx) return;
         if (charts[id]) charts[id].destroy();
         let total = totalBase || Object.values(data).reduce((a, b) => a + b, 0);
         let percData = {};
         for (let [k, v] of Object.entries(data)) percData[k] = totalBase ? ((v / totalBase) * 100).toFixed(1) : v;
-        charts[id] = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(percData), datasets: [{ data: Object.values(percData), backgroundColor: '#1e4a3b' }] }, options: { scales: { y: { beginAtZero: true, title: { display: true, text: totalBase ? '%' : yLabel } } }, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => totalBase ? `${v}%` : v, font: { size: 10 } } } } });
+        charts[id] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: Object.keys(percData), datasets: [{ data: Object.values(percData), backgroundColor: '#1e4a3b' }] },
+            options: { scales: { y: { beginAtZero: true, title: { display: true, text: totalBase ? '%' : yLabel } } }, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => totalBase ? `${v}%` : v, font: { size: 10 } } } }
+        });
         addNote(ctx, title);
     }
     
@@ -843,78 +979,26 @@
         parent.appendChild(note);
     }
     
-    function updateAllCharts() {
-        let totalForm = filteredData.length;
-        let totalEsc = allSchools.length;
-        
-        let regMap = {}; filteredData.forEach(r => { let rg = getRegiao(r); if (rg) regMap[rg] = (regMap[rg] || 0) + 1; });
-        createPieChart('chartRegiao', regMap, 'Distribuição por região');
-        
-        let dirMap = {}; filteredData.forEach(r => { let d = getDiretrizes(r); if (d) dirMap[d] = (dirMap[d] || 0) + 1; });
-        createPieChart('chartDiretrizes', dirMap, 'Diretrizes Curriculares para EEQ');
-        
-        let fechMap = {}; filteredData.forEach(r => { let f = getFechamento(r); if (f) fechMap[f] = (fechMap[f] || 0) + 1; });
-        createPieChart('chartFechamentoGeral', fechMap, 'Houve fechamento/nucleação?');
-        
-        let emMap = {}; filteredData.forEach(r => { let e = getOfertaEM(r); if (e) emMap[e] = (emMap[e] || 0) + 1; });
-        createPieChart('chartOfertaEM', emMap, 'Oferta de Ensino Médio');
-        
-        let evMap = {}; filteredData.forEach(r => { let e = getEvasao(r); if (e) evMap[e] = (evMap[e] || 0) + 1; });
-        createPieChart('chartEvasaoEM', evMap, 'Evasão por falta de EM');
-        
-        let racMap = {}; allSchools.forEach(s => { if (s.racismo) racMap[s.racismo] = (racMap[s.racismo] || 0) + 1; });
-        createPieChart('chartRacismo', racMap, 'Escolas com relatos de racismo');
-        
-        let alimMap = {}; allSchools.forEach(s => { if (s.alimentacao_cultura) alimMap[s.alimentacao_cultura] = (alimMap[s.alimentacao_cultura] || 0) + 1; });
-        createBarChart('chartAlimentacaoCultura', alimMap, 'Alimentação respeita cultura quilombola?');
-        
-        let consMap = {}; allSchools.forEach(s => { if (s.participacao_consulta) consMap[s.participacao_consulta] = (consMap[s.participacao_consulta] || 0) + 1; });
-        createBarChart('chartConsulta', consMap, 'Comunidade é consultada em decisões');
-        
-        let concMap = {}; filteredData.forEach(r => { let c = getConcurso(r); if (c) concMap[c] = (concMap[c] || 0) + 1; });
-        createPieChart('chartConcurso', concMap, 'Concurso para professores quilombolas');
-        
-        let matMap = {}; allSchools.forEach(s => { if (s.materiais_didaticos) matMap[s.materiais_didaticos] = (matMap[s.materiais_didaticos] || 0) + 1; });
-        createPieChart('chartMateriaisDidaticos', matMap, 'Materiais com cultura quilombola');
-        
-        let transMap = {}; allSchools.forEach(s => { if (s.usa_transporte) transMap[s.usa_transporte] = (transMap[s.usa_transporte] || 0) + 1; });
-        createPieChart('chartUsaTransporte', transMap, 'Uso de transporte escolar');
-        
-        let relMap = {}; allSchools.forEach(s => { if (s.relacao_comunidade) relMap[s.relacao_comunidade] = (relMap[s.relacao_comunidade] || 0) + 1; });
-        createBarChart('chartRelacaoComunidade', relMap, 'Relação escola-comunidade');
-        
-        let motMap = {};
-        filteredData.forEach(r => { getMotivosInterrupcao(r).forEach(m => { if (m) motMap[m] = (motMap[m] || 0) + 1; }); });
-        createBarChart('chartMotivos', motMap, 'Motivos para interrupção dos estudos', totalForm);
-        
-        let etapasMap = {};
-        allSchools.forEach(s => { s.etapas.forEach(e => { if (e) etapasMap[e] = (etapasMap[e] || 0) + 1; }); });
-        createBarChart('chartEtapasEnsino', etapasMap, 'Etapas de ensino oferecidas', totalEsc);
-        
-        let dentroDist = {};
-        filteredData.forEach(r => { let qtd = getQuantidadeEscolasDentro(r); if (qtd !== null) dentroDist[qtd.toString()] = (dentroDist[qtd.toString()] || 0) + 1; });
-        if (Object.keys(dentroDist).length) createBarChart('chartEscolasDentroDist', dentroDist, 'Escolas DENTRO do território');
-    }
-    
     function renderChartsGrid() {
-        let chartsList = [
+        const chartsList = [
             { id: 'chartRegiao', title: '🌎 Região do país' },
-            { id: 'chartDiretrizes', title: '📜 Diretrizes Curriculares' },
-            { id: 'chartFechamentoGeral', title: '🏚️ Fechamento de escolas' },
+            { id: 'chartDiretrizes', title: '📜 Diretrizes Curriculares para EEQ' },
+            { id: 'chartFechamentoGeral', title: '🏚️ Fechamento/nucleação de escolas' },
             { id: 'chartOfertaEM', title: '🎓 Oferta de Ensino Médio' },
             { id: 'chartEvasaoEM', title: '🚫 Evasão por falta de EM' },
-            { id: 'chartRacismo', title: '⚠️ Relatos de racismo' },
+            { id: 'chartRacismo', title: '⚠️ Relatos de racismo nas escolas' },
             { id: 'chartAlimentacaoCultura', title: '🍽️ Alimentação respeita cultura' },
             { id: 'chartConsulta', title: '🤝 Comunidade consultada' },
-            { id: 'chartConcurso', title: '📋 Concurso para professores' },
-            { id: 'chartMateriaisDidaticos', title: '📚 Materiais com cultura' },
-            { id: 'chartUsaTransporte', title: '🚌 Uso de transporte' },
+            { id: 'chartConcurso', title: '📋 Concurso para professores quilombolas' },
+            { id: 'chartMateriaisDidaticos', title: '📚 Materiais com cultura quilombola' },
+            { id: 'chartUsaTransporte', title: '🚌 Uso de transporte escolar' },
             { id: 'chartRelacaoComunidade', title: '🤝 Relação escola-comunidade' },
-            { id: 'chartMotivos', title: '🚸 Motivos para interrupção' },
-            { id: 'chartEscolasDentroDist', title: '📊 Escolas DENTRO' },
-            { id: 'chartEtapasEnsino', title: '🎓 Etapas de ensino' }
+            { id: 'chartMotivos', title: '🚸 Motivos para interrupção dos estudos' },
+            { id: 'chartEscolasDentroDist', title: '📊 Escolas DENTRO do território' },
+            { id: 'chartEtapasEnsino', title: '🎓 Etapas de ensino oferecidas' }
         ];
-        document.getElementById('chartsGrid').innerHTML = chartsList.map(c => `<div class="chart-card"><h3>${c.title}</h3><canvas id="${c.id}"></canvas></div>`).join('');
+        let html = chartsList.map(c => `<div class="chart-card"><h3>${c.title}</h3><canvas id="${c.id}"></canvas></div>`).join('');
+        document.getElementById('chartsGrid').innerHTML = html;
     }
     
     function updateTable() {
@@ -923,17 +1007,21 @@
             if (!searchTerm) return true;
             return getComunidade(r).toLowerCase().includes(searchTerm) ||
                    getUF(r).toLowerCase().includes(searchTerm) ||
-                   getPerfil(r).toLowerCase().includes(searchTerm);
+                   getPerfil(r).toLowerCase().includes(searchTerm) ||
+                   getRelato(r).toLowerCase().includes(searchTerm);
         });
         let tbody = document.querySelector('#dadosTable tbody');
-        if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum registro</td></tr>'; return; }
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">Nenhum registro encontrado</td></tr>';
+            return;
+        }
         tbody.innerHTML = filtered.slice(0, 100).map(r => `
             <tr>
                 <td>${getComunidade(r).substring(0, 60) || '-'}</td>
                 <td>${getUF(r)}</td>
                 <td>${getPerfil(r)}</td>
-                <td><small>${(getRelato(r) || '-').substring(0, 150)}</small></td>
-                <td><small>${(getSugestoes(r) || '-').substring(0, 150)}</small></td>
+                <td><small>${getRelato(r).substring(0, 150) || '-'}</small></td>
+                <td><small>${getSugestoes(r).substring(0, 150) || '-'}</small></td>
             </tr>
         `).join('');
     }
@@ -944,6 +1032,7 @@
         let maxVal = 0;
         for (let uf in ufAggregated) maxVal = Math.max(maxVal, parseFloat(ufAggregated[uf][indicator]) || 0);
         maxVal = Math.max(maxVal, 1);
+        
         fetch('https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson')
             .then(res => res.json())
             .then(geo => {
@@ -952,32 +1041,58 @@
                     style: (f) => {
                         let uf = f.properties.sigla;
                         let val = ufAggregated[uf] ? parseFloat(ufAggregated[uf][indicator]) || 0 : 0;
-                        return { fillColor: '#e67e22', weight: 1, opacity: 1, color: 'white', fillOpacity: 0.2 + (val / maxVal) * 0.7 };
+                        let intensity = 0.2 + (val / maxVal) * 0.7;
+                        return { fillColor: '#e67e22', weight: 1, opacity: 1, color: 'white', fillOpacity: intensity };
                     },
                     onEachFeature: (f, l) => {
-                        let uf = f.properties.sigla, d = ufAggregated[uf] || {};
-                        l.bindTooltip(`<b>${f.properties.nome}</b><br>📋 ${d.total_respostas || 0} respostas<br>🏫 ${d.total_escolas || 0} escolas<br>⚠️ Racismo: ${d.perc_racismo || 0}%<br>🎓 Oferta EM: ${d.perc_em || 0}%`);
+                        let uf = f.properties.sigla;
+                        let d = ufAggregated[uf] || {};
+                        l.bindTooltip(`
+                            <b>${f.properties.nome} (${uf})</b><br>
+                            📋 Respostas: ${d.total_respostas || 0}<br>
+                            🏫 Escolas: ${d.total_escolas || 0}<br>
+                            🏠 Dentro: ${d.escolas_dentro || 0}<br>
+                            ⚠️ Racismo: ${d.perc_racismo || 0}%<br>
+                            🚫 Fechamento: ${d.perc_fechamento || 0}%<br>
+                            🎓 Oferta EM: ${d.perc_em || 0}%
+                        `, { sticky: true });
                     }
                 }).addTo(map);
-            }).catch(() => document.getElementById('map').innerHTML = '<div style="padding:20px;">Erro ao carregar mapa</div>');
+            })
+            .catch(() => document.getElementById('map').innerHTML = '<div style="padding:20px;">Erro ao carregar mapa</div>');
     }
     
     function initMap() {
         map = L.map('map').setView([-14.2, -51.9], 4);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM' }).addTo(map);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+        }).addTo(map);
         updateMap();
     }
     
     function getAllCategoricalVariables() {
-        return { "Região": (r) => getRegiao(r), "UF": (r) => getUF(r), "Racismo": (r) => getRacismo(r), "Fechamento": (r) => getFechamento(r), "Oferta EM": (r) => getOfertaEM(r), "Evasão": (r) => getEvasao(r), "Diretrizes": (r) => getDiretrizes(r), "Concurso": (r) => getConcurso(r) };
+        return {
+            "Região": (r) => getRegiao(r),
+            "UF": (r) => getUF(r),
+            "Racismo": (r) => getRacismoTerritorio(r),
+            "Fechamento": (r) => getFechamento(r),
+            "Oferta EM": (r) => getOfertaEM(r),
+            "Evasão": (r) => getEvasao(r),
+            "Diretrizes": (r) => getDiretrizes(r),
+            "Concurso": (r) => getConcurso(r),
+            "Demanda reabertura": (r) => getDemandaReabertura(r),
+            "Acionamento": (r) => getAcionamento(r)
+        };
     }
     
     function populateComparators() {
         let vars = getAllCategoricalVariables();
         let keys = Object.keys(vars);
-        document.getElementById('compVar1').innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
-        document.getElementById('compVar2').innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
-        document.getElementById('compVar1').addEventListener('change', updateFilterOptions);
+        let s1 = document.getElementById('compVar1');
+        let s2 = document.getElementById('compVar2');
+        s1.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
+        s2.innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
+        s1.addEventListener('change', updateFilterOptions);
         updateFilterOptions();
     }
     
@@ -986,52 +1101,100 @@
         let fn = getAllCategoricalVariables()[varName];
         if (!fn) return;
         let cats = new Set();
-        for (let row of filteredData) { let val = fn(row); if (val && val !== "") cats.add(val); }
-        document.getElementById('compFilter').innerHTML = '<option value="all">Todos</option>' + Array.from(cats).sort().map(c => `<option value="${c}">${c}</option>`).join('');
+        for (let row of filteredData) {
+            let val = fn(row);
+            if (val && val !== "") cats.add(val);
+        }
+        let filterSelect = document.getElementById('compFilter');
+        filterSelect.innerHTML = '<option value="all">Todos</option>' + Array.from(cats).sort().map(c => `<option value="${c}">${c}</option>`).join('');
     }
     
     function renderComparison() {
-        let v1 = document.getElementById('compVar1').value, v2 = document.getElementById('compVar2').value, fv = document.getElementById('compFilter').value;
-        let fn1 = getAllCategoricalVariables()[v1], fn2 = getAllCategoricalVariables()[v2];
+        let v1 = document.getElementById('compVar1').value;
+        let v2 = document.getElementById('compVar2').value;
+        let fv = document.getElementById('compFilter').value;
+        let fn1 = getAllCategoricalVariables()[v1];
+        let fn2 = getAllCategoricalVariables()[v2];
         if (!fn1 || !fn2) return;
-        let data = fv !== "all" ? filteredData.filter(r => fn1(r) === fv) : filteredData;
+        
+        let data = filteredData;
+        if (fv !== "all") data = data.filter(r => fn1(r) === fv);
+        
         let cross = {};
         for (let row of data) {
-            let c1 = fn1(row), c2 = fn2(row);
+            let c1 = fn1(row);
+            let c2 = fn2(row);
             if (!c1 || !c2) continue;
             if (!cross[c1]) cross[c1] = {};
             cross[c1][c2] = (cross[c1][c2] || 0) + 1;
         }
+        
         let categories = Object.keys(cross);
         let subcats = [...new Set(Object.values(cross).flatMap(obj => Object.keys(obj)))];
-        let datasets = subcats.map(sub => ({ label: sub, data: categories.map(cat => ((cross[cat][sub] || 0) / Object.values(cross[cat]).reduce((a, b) => a + b, 0) * 100).toFixed(1)), backgroundColor: `hsl(${Math.random() * 360}, 70%, 55%)` }));
+        let datasets = subcats.map(sub => ({
+            label: sub,
+            data: categories.map(cat => ((cross[cat][sub] || 0) / Object.values(cross[cat]).reduce((a, b) => a + b, 0) * 100).toFixed(1)),
+            backgroundColor: `hsl(${Math.random() * 360}, 70%, 55%)`
+        }));
+        
         if (comparisonChart) comparisonChart.destroy();
-        comparisonChart = new Chart(document.getElementById('comparisonChart').getContext('2d'), {
-            type: 'bar', data: { labels: categories, datasets: datasets },
-            options: { scales: { y: { max: 100, title: { display: true, text: '%' } } }, plugins: { datalabels: { anchor: 'end', align: 'top', formatter: (v) => v + '%', font: { size: 9 } } } }
+        let ctx = document.getElementById('comparisonChart').getContext('2d');
+        comparisonChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: categories, datasets: datasets },
+            options: {
+                responsive: true,
+                scales: { y: { max: 100, title: { display: true, text: '%' } } },
+                plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}%` } }, datalabels: { anchor: 'end', align: 'top', formatter: (v) => v + '%', font: { size: 9 } } }
+            }
         });
-        document.getElementById('dynamicChartNote').innerText = `Distribuição de "${v2}" dentro de "${v1}"${fv !== 'all' ? ` (filtrado)` : ''}`;
+        document.getElementById('dynamicChartNote').innerText = `Distribuição de "${v2}" dentro de cada categoria de "${v1}"${fv !== 'all' ? ` (filtrado por ${v1} = ${fv})` : ''}`;
     }
     
-    function downloadChart() { if (comparisonChart) { let a = document.createElement('a'); a.download = 'comparacao.png'; a.href = comparisonChart.canvas.toDataURL(); a.click(); } }
-    function populatePivotSelects() { let keys = Object.keys(getAllCategoricalVariables()); document.getElementById('pivotRows').innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join(''); document.getElementById('pivotCols').innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join(''); }
+    function downloadChart() {
+        if (comparisonChart) {
+            let a = document.createElement('a');
+            a.download = 'comparacao_quilombola.png';
+            a.href = comparisonChart.canvas.toDataURL();
+            a.click();
+        }
+    }
+    
+    function populatePivotSelects() {
+        let vars = getAllCategoricalVariables();
+        let keys = Object.keys(vars);
+        document.getElementById('pivotRows').innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
+        document.getElementById('pivotCols').innerHTML = keys.map(k => `<option value="${k}">${k}</option>`).join('');
+    }
+    
     function renderPivotTable() {
-        let rowVar = document.getElementById('pivotRows').value, colVar = document.getElementById('pivotCols').value;
-        let fnRow = getAllCategoricalVariables()[rowVar], fnCol = getAllCategoricalVariables()[colVar];
+        let rowVar = document.getElementById('pivotRows').value;
+        let colVar = document.getElementById('pivotCols').value;
+        let fnRow = getAllCategoricalVariables()[rowVar];
+        let fnCol = getAllCategoricalVariables()[colVar];
         if (!fnRow || !fnCol) return;
+        
         let pivot = {};
         for (let r of filteredData) {
-            let rv = fnRow(r), cv = fnCol(r);
+            let rv = fnRow(r);
+            let cv = fnCol(r);
             if (!rv || !cv) continue;
             if (!pivot[rv]) pivot[rv] = {};
             pivot[rv][cv] = (pivot[rv][cv] || 0) + 1;
         }
-        let rows = Object.keys(pivot).sort(), cols = [...new Set(Object.values(pivot).flatMap(obj => Object.keys(obj)))].sort();
+        
+        let rows = Object.keys(pivot).sort();
+        let cols = [...new Set(Object.values(pivot).flatMap(obj => Object.keys(obj)))].sort();
+        
         let html = '<table class="pivot-table"><thead><tr><th>' + rowVar + ' \\ ' + colVar + '</th>' + cols.map(c => `<th>${c}</th>`).join('') + '<th>Total</th></tr></thead><tbody>';
         for (let r of rows) {
             let rowTotal = 0;
             html += `<tr><td><strong>${r}</strong></td>`;
-            for (let c of cols) { let val = pivot[r][c] || 0; rowTotal += val; html += `<td>${val}</td>`; }
+            for (let c of cols) {
+                let val = pivot[r][c] || 0;
+                rowTotal += val;
+                html += `<td>${val}</td>`;
+            }
             html += `<td><strong>${rowTotal}</strong></td></tr>`;
         }
         html += '</tbody></table>';
@@ -1042,7 +1205,7 @@
         filteredData = rawData.filter(r => {
             if (filterRegiao.value !== "all" && getRegiao(r) !== filterRegiao.value) return false;
             if (filterUF.value !== "all" && getUF(r) !== filterUF.value) return false;
-            if (filterRacismo.value !== "all" && getRacismo(r) !== filterRacismo.value) return false;
+            if (filterRacismo.value !== "all" && getRacismoTerritorio(r) !== filterRacismo.value) return false;
             if (filterFechamento.value !== "all" && getFechamento(r) !== filterFechamento.value) return false;
             if (filterEM.value !== "all" && getOfertaEM(r) !== filterEM.value) return false;
             return true;
@@ -1056,23 +1219,35 @@
     function updateFiltersDropdown() {
         let regioes = [...new Set(rawData.map(r => getRegiao(r)))].filter(r => r);
         let ufs = [...new Set(rawData.map(r => getUF(r)))].filter(u => u);
-        let currentRegiao = filterRegiao.value, currentUF = filterUF.value;
+        let currentRegiao = filterRegiao.value;
+        let currentUF = filterUF.value;
         filterRegiao.innerHTML = '<option value="all">Todas</option>' + regioes.map(r => `<option value="${r}">${r}</option>`).join('');
         filterUF.innerHTML = '<option value="all">Todos</option>' + ufs.map(u => `<option value="${u}">${u}</option>`).join('');
         if (regioes.includes(currentRegiao)) filterRegiao.value = currentRegiao;
+        else filterRegiao.value = "all";
         if (ufs.includes(currentUF)) filterUF.value = currentUF;
+        else filterUF.value = "all";
     }
     
     function loadData() {
-        Papa.parse(CSV_URL, { download: true, header: true, skipEmptyLines: true, complete: (res) => {
-            if (res.data && res.data.length) {
-                rawData = res.data.filter(r => Object.values(r).some(v => v && v.toString().trim() !== ""));
-                applyFilters();
-                document.getElementById('lastUpdateDate').innerText = "Atualizado: " + new Date().toLocaleString('pt-BR');
-            }
-        }, error: () => document.getElementById('dadosTable').innerHTML = '<tr><td colspan="5">Erro ao carregar</td></tr>' });
+        Papa.parse(CSV_URL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: (res) => {
+                if (res.data && res.data.length) {
+                    rawData = res.data.filter(r => Object.values(r).some(v => v && v.toString().trim() !== ""));
+                    applyFilters();
+                    document.getElementById('lastUpdateDate').innerText = "Última atualização: " + new Date().toLocaleString('pt-BR');
+                } else {
+                    document.getElementById('dadosTable').innerHTML = '<tr><td colspan="5">Erro ao carregar dados</td></tr>';
+                }
+            },
+            error: () => document.getElementById('dadosTable').innerHTML = '<tr><td colspan="5">Erro ao carregar dados</td></tr>'
+        });
     }
     
+    // Inicialização
     const filterRegiao = document.getElementById('filterRegiao');
     const filterUF = document.getElementById('filterUF');
     const filterRacismo = document.getElementById('filterRacismo');
@@ -1080,8 +1255,11 @@
     const filterEM = document.getElementById('filterEM');
     
     document.getElementById('resetFilters').addEventListener('click', () => {
-        filterRegiao.value = "all"; filterUF.value = "all"; filterRacismo.value = "all";
-        filterFechamento.value = "all"; filterEM.value = "all";
+        filterRegiao.value = "all";
+        filterUF.value = "all";
+        filterRacismo.value = "all";
+        filterFechamento.value = "all";
+        filterEM.value = "all";
         document.getElementById('tableSearchFilter').value = "";
         applyFilters();
     });
@@ -1097,6 +1275,24 @@
     document.getElementById('refreshMap').addEventListener('click', () => updateMap());
     document.getElementById('tableSearchFilter').addEventListener('input', () => updateTable());
     
+    window.showInfoModal = function(type) {
+        let modal = document.getElementById('infoModal');
+        let titles = { respostas: "Formulários", escolas_total: "Total de escolas", escolas_dentro: "Escolas dentro", racismo_relatos: "Relatos de racismo", fechamento: "Fechamentos" };
+        let texts = {
+            respostas: "Número total de formulários preenchidos por lideranças quilombolas.",
+            escolas_total: "Total de escolas mencionadas nos formulários (inclui dentro e fora do território).",
+            escolas_dentro: "Escolas localizadas fisicamente dentro do território quilombola.",
+            racismo_relatos: "Número de escolas com relato de ocorrência de racismo.",
+            fechamento: "Número de territórios que relataram fechamento de escolas nos últimos 10 anos."
+        };
+        document.getElementById('modalTitle').innerText = titles[type] || "Informação";
+        document.getElementById('modalText').innerText = texts[type] || "Clique nos gráficos para mais detalhes.";
+        modal.style.display = "flex";
+    };
+    
+    document.querySelector('.close-modal').addEventListener('click', () => document.getElementById('infoModal').style.display = "none");
+    window.onclick = (e) => { if (e.target === document.getElementById('infoModal')) document.getElementById('infoModal').style.display = "none"; };
+    
     renderChartsGrid();
     populateComparators();
     populatePivotSelects();
@@ -1104,34 +1300,73 @@
     loadData();
     
     // Chatbot
-    const chatBtn = document.getElementById('chatButton'), chatWin = document.getElementById('chatWindow'), closeChat = document.getElementById('closeChat');
-    const chatMessages = document.getElementById('chatMessages'), chatInput = document.getElementById('chatInput'), sendChat = document.getElementById('sendChat');
-    function addMessage(text, isUser = false) { let msg = document.createElement('div'); msg.className = `chat-message ${isUser ? 'user' : 'bot'}`; msg.innerText = text; chatMessages.appendChild(msg); chatMessages.scrollTop = chatMessages.scrollHeight; return msg; }
+    const chatBtn = document.getElementById('chatButton');
+    const chatWin = document.getElementById('chatWindow');
+    const closeChat = document.getElementById('closeChat');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const sendChat = document.getElementById('sendChat');
+    
+    function addMessage(text, isUser = false) {
+        let msgDiv = document.createElement('div');
+        msgDiv.className = `chat-message ${isUser ? 'user' : 'bot'}`;
+        msgDiv.innerText = text;
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return msgDiv;
+    }
+    
     function getBotAnswer(question) {
-        if (!dataSummary || Object.keys(dataSummary).length === 0) return Promise.resolve("Carregando dados...");
-        let q = question.toLowerCase(), answer = "";
-        if (q.includes("total escolas")) answer = `📊 Total: ${dataSummary.total_escolas} escolas (${dataSummary.escolas_dentro} dentro, ${dataSummary.escolas_fora} fora)`;
-        else if (q.includes("racismo")) answer = `⚠️ ${dataSummary.racismo?.sim || 0} escolas com racismo (${dataSummary.racismo?.percentual || 0}%)`;
-        else if (q.includes("fechamento")) answer = `🏚️ ${dataSummary.fechamento?.sim || 0} territórios (${dataSummary.fechamento?.percentual || 0}%)`;
-        else if (q.includes("ensino médio") || q.includes("em")) answer = `🎓 ${dataSummary.oferta_em?.sim || 0} territórios (${dataSummary.oferta_em?.percentual || 0}%) ofertam EM. Evasão: ${dataSummary.evasao?.sim || 0} (${dataSummary.evasao?.percentual || 0}%)`;
-        else if (q.includes("diretriz")) answer = `📜 Diretrizes: ${dataSummary.diretrizes?.sim || 0} municípios têm, ${dataSummary.diretrizes?.nao || 0} não têm`;
-        else if (q.includes("concurso")) answer = `📋 ${dataSummary.concurso?.sim || 0} municípios (${dataSummary.concurso?.percentual || 0}%) têm concurso para professores quilombolas`;
-        else if (q.includes("transporte")) answer = `🚌 ${dataSummary.transporte?.sim || 0} escolas (${dataSummary.transporte?.percentual || 0}%) usam transporte escolar`;
-        else if (q.includes("alimentação")) answer = `🍽️ ${dataSummary.alimentacao_respeita?.sim || 0} escolas (${dataSummary.alimentacao_respeita?.percentual || 0}%) respeitam cultura alimentar`;
-        else if (q.includes("materiais")) answer = `📚 ${dataSummary.materiais_didaticos?.sim || 0} escolas (${dataSummary.materiais_didaticos?.percentual || 0}%) têm materiais com cultura quilombola`;
-        else answer = `Pergunte sobre: total escolas, racismo, fechamento, EM, diretrizes, concurso, transporte, alimentação ou materiais`;
+        if (!dataSummary || Object.keys(dataSummary).length === 0) {
+            return Promise.resolve("Os dados ainda estão sendo carregados. Tente novamente em instantes.");
+        }
+        let answer = `Com base nos dados da pesquisa:\n\n`;
+        let q = question.toLowerCase();
+        
+        if (q.includes("total") && (q.includes("escola") || q.includes("escolas"))) {
+            answer += `📊 Total de escolas: ${dataSummary.total_escolas || 0}\n`;
+            answer += `🏠 Escolas dentro do território: ${dataSummary.escolas_dentro || 0}\n`;
+            answer += `🏚️ Escolas fora do território: ${dataSummary.escolas_fora || 0}`;
+        } else if (q.includes("racismo")) {
+            answer += `⚠️ Relatos de racismo: ${dataSummary.racismo?.sim || 0} escolas (${dataSummary.racismo?.percentual || 0}% do total)`;
+        } else if (q.includes("fechamento")) {
+            answer += `🏚️ Territórios com fechamento de escolas: ${dataSummary.fechamento?.sim || 0} (${dataSummary.fechamento?.percentual || 0}% dos respondentes)`;
+        } else if (q.includes("ensino médio") || q.includes("em")) {
+            answer += `🎓 Oferta de Ensino Médio: ${dataSummary.oferta_em?.sim || 0} territórios (${dataSummary.oferta_em?.percentual || 0}%)\n`;
+            answer += `🚫 Evasão por falta de EM: ${dataSummary.evasao?.sim || 0} (${dataSummary.evasao?.percentual || 0}%)`;
+        } else if (q.includes("diretriz") || q.includes("currículo")) {
+            answer += `📜 Municípios com Diretrizes Curriculares para EEQ: ${dataSummary.diretrizes?.sim || 0}\n`;
+            answer += `📜 Municípios sem Diretrizes: ${dataSummary.diretrizes?.nao || 0}`;
+        } else if (q.includes("concurso") || q.includes("professor") || q.includes("quilombola")) {
+            answer += `📋 Municípios com concurso/reserva para professores quilombolas: ${dataSummary.concurso?.sim || 0} (${dataSummary.concurso?.percentual || 0}%)`;
+        } else if (q.includes("transporte")) {
+            answer += `🚌 Escolas onde estudantes usam transporte: ${dataSummary.transporte?.sim || 0} (${dataSummary.transporte?.percentual || 0}% do total)`;
+        } else if (q.includes("alimentação") || q.includes("alimentar")) {
+            answer += `🍽️ Escolas onde alimentação respeita cultura quilombola: ${dataSummary.alimentacao_respeita?.sim || 0} (${dataSummary.alimentacao_respeita?.percentual || 0}%)`;
+        } else if (q.includes("consulta") || q.includes("participação")) {
+            answer += `🤝 Escolas onde comunidade é consultada: ${dataSummary.comunidade_consultada?.sim || 0} (${dataSummary.comunidade_consultada?.percentual || 0}%)`;
+        } else if (q.includes("motivo") || q.includes("interrupção")) {
+            answer += `🚸 Principais motivos para interrupção dos estudos:\n`;
+            for (let [motivo, contagem] of Object.entries(dataSummary.motivos_interrupcao || {})) {
+                answer += `- ${motivo}: ${contagem} menções\n`;
+            }
+        } else {
+            answer = `Olá! Posso responder perguntas sobre:\n- Total de escolas e localização\n- Relatos de racismo\n- Fechamento de escolas\n- Oferta de Ensino Médio e evasão\n- Diretrizes curriculares\n- Concurso para professores quilombolas\n- Transporte escolar\n- Alimentação escolar\n- Participação comunitária\n- Motivos de interrupção dos estudos\n\nComo posso ajudar?`;
+        }
         return Promise.resolve(answer);
     }
+    
     async function handleUserQuestion() {
         let question = chatInput.value.trim();
         if (!question) return;
         addMessage(question, true);
         chatInput.value = '';
-        let loading = addMessage("Analisando...");
+        let loadingMsg = addMessage("Àgbá está pensando...");
         let answer = await getBotAnswer(question);
-        loading.remove();
+        loadingMsg.remove();
         addMessage(answer, false);
     }
+    
     chatBtn.onclick = () => chatWin.style.display = 'flex';
     closeChat.onclick = () => chatWin.style.display = 'none';
     sendChat.onclick = handleUserQuestion;
