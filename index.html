@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Central de sistematização de dados - Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas (CONAQ)</title>
+    <title>Central de confluência de dados - Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas (CONAQ)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -220,7 +220,7 @@
 <div class="container">
     <div class="hero">
         <div class="hero-text">
-            <h1>📚 CENTRAL DE SISTEMATIZAÇÃO DE DADOS:<br>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas (CONAQ)</h1>
+            <h1>📚 CENTRAL DE CONFLUÊNCIA DE DADOS:<br>Rede Nacional de Pesquisadoras e Pesquisadores Quilombolas (CONAQ)</h1>
             <p>Espaço Colaborativo e interativo, de sistematização de dados da Pesquisa "Panorama da Educação Escolar Quilombola no país". Alimentado por quilombolas, permite o registro contínuo de informações, geração de gráficos e cruzamento de dados.</p>
             <div class="hero-stats" id="heroStats"></div>
         </div>
@@ -388,7 +388,7 @@
     function getPerfil(row) { let p = getSafe(row, "3. Qual é a função ou o papel da pessoa informante na comunidade ou no território quilombola?"); return p.split(",")[0].trim() || "Não informado"; }
     function getRacismo(row) { let r = getSafe(row, "Há relatos de ocorrência de racismo no contexto desta escola?"); return (r.toLowerCase().includes("sim")) ? "Sim" : "Não"; }
     function getFechamento(row) { let f = getSafe(row, "14. Nos últimos 10 anos houve fechamento de escolas dentro do território/comunidade quilombola, nucleação ou transferência de turmas para outras escolas?"); if (f.toLowerCase().includes("não houve")) return "Não"; if (f.toLowerCase().includes("sim")) return "Sim"; return "Não informado"; }
-    function getOfertaEM(row) { let em = getSafe(row, "19. É garantida a oferta de Ensino Médio dentro ou nas proximidades do território, evitando a migração forçada dos jeunes?"); if (em.toLowerCase().includes("sim")) return "Sim"; if (em.toLowerCase().includes("não")) return "Não"; return "Não informado"; }
+    function getOfertaEM(row) { let em = getSafe(row, "19. É garantida a oferta de Ensino Médio dentro ou nas proximidades do território, evitando a migração forçada dos jovens?"); if (em.toLowerCase().includes("sim")) return "Sim"; if (em.toLowerCase().includes("não")) return "Não"; return "Não informado"; }
     function getEvasao(row) { let ev = getSafe(row, "20. Os(as) jovens param de estudar por não ter o Ensino Médio dentro do território quilombola?"); if (ev.toLowerCase().includes("param")) return "Sim"; if (ev.toLowerCase().includes("não param")) return "Não"; return "Não informado"; }
     function getDiretrizes(row) { let d = getSafe(row, "10. No seu município há Diretrizes Curriculares ou outro documento que oriente sobre a implementação da Educação Escolar Quilombolas?"); if (!d) return "Não informado"; if (d.toLowerCase().includes("não há")) return "Não há"; if (d.toLowerCase().includes("sim")) return "Sim"; return "Outro"; }
     function getAvaliacao(row) { let av = getSafe(row, "23. Como você avalia a qualidade da Educação Escolar Quilombola no município?"); if (av.includes("Excelente")) return "Excelente"; if (av.includes("Boa")) return "Boa"; if (av.includes("Regular")) return "Regular"; if (av.includes("Ruim")) return "Ruim"; if (av.includes("Péssima")) return "Péssima"; return "Não avaliou"; }
@@ -897,7 +897,7 @@
         processProfessorMateriais();
         processRegionalHeatmap();
         processCorrelation();
-        processRadar();
+        processRadar();  // agora com todas as UFs
         processTreemapPercent();
     }
     
@@ -971,17 +971,15 @@
     function processCorrelation() {
         let correl = [];
         for (let uf in ufAggregated) {
-            // Verifica se tem dados de escolas e respostas
-            if (ufAggregated[uf].total_escolas >= 3 && ufAggregated[uf].perc_em !== undefined && ufAggregated[uf].perc_sem_evasao !== undefined) {
+            if (ufAggregated[uf].total_escolas >= 1 && ufAggregated[uf].perc_em !== undefined && ufAggregated[uf].perc_sem_evasao !== undefined) {
                 correl.push({ ofertaEM: parseFloat(ufAggregated[uf].perc_em), evasao: 100 - parseFloat(ufAggregated[uf].perc_sem_evasao), uf: uf });
             }
         }
         if (correl.length === 0) {
-            // Mostrar mensagem no gráfico
             const ctx = document.getElementById('chartCorrelation').getContext('2d');
             if (charts.chartCorrelation) charts.chartCorrelation.destroy();
             charts.chartCorrelation = new Chart(ctx, { type: 'scatter', data: { datasets: [] }, options: { plugins: { tooltip: { enabled: false } } } });
-            document.querySelector('#chartCorrelation').parentElement.querySelector('.chart-note').innerText = 'Dados insuficientes para correlação (menos de 3 UFs com dados completos).';
+            document.querySelector('#chartCorrelation').parentElement.querySelector('.chart-note').innerText = 'Dados insuficientes para correlação (nenhuma UF com dados completos).';
             return;
         }
         if (charts.chartCorrelation) charts.chartCorrelation.destroy();
@@ -992,24 +990,29 @@
         document.querySelector('#chartCorrelation').parentElement.querySelector('.chart-note').innerText = 'Relação entre oferta de Ensino Médio e evasão por UF.';
     }
     
+    // CORREÇÃO: Radar agora exibe TODAS as UFs com dados
     function processRadar() {
-        let ufsDisponiveis = [];
-        for (let uf in ufAggregated) {
-            if (ufAggregated[uf].total_escolas >= 3 && ufAggregated[uf].perc_em !== undefined) {
-                ufsDisponiveis.push(uf);
-            }
-        }
-        if (ufsDisponiveis.length === 0) {
+        // Obtém todas as UFs que aparecem nos dados (ufAggregated)
+        let todasUFs = Object.keys(ufAggregated).filter(uf => ufAggregated[uf].total_escolas >= 1);
+        if (todasUFs.length === 0) {
             const ctx = document.getElementById('chartRadar').getContext('2d');
             if (charts.chartRadar) charts.chartRadar.destroy();
             charts.chartRadar = new Chart(ctx, { type: 'radar', data: { labels: [], datasets: [] }, options: {} });
-            document.querySelector('#chartRadar').parentElement.querySelector('.chart-note').innerText = 'Dados insuficientes para radar (menos de 3 UFs com dados).';
+            document.querySelector('#chartRadar').parentElement.querySelector('.chart-note').innerText = 'Dados insuficientes para radar (nenhuma UF com dados).';
             return;
         }
-        let ufsSelecionadas = ufsDisponiveis.slice(0, 6); // no máximo 6
+        
         let radarIndicadores = ['Racismo (%)', 'Oferta EM (%)', 'Professores (%)', 'Materiais (%)', 'Consulta (%)'];
         let datasets = [];
-        for (let uf of ufsSelecionadas) {
+        // Gerar cores distintas para cada UF (evita repetições)
+        let corPalette = [
+            '#1e4a3b', '#e67e22', '#3498db', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#2c3e50',
+            '#d35400', '#c0392b', '#16a085', '#27ae60', '#2980b9', '#8e44ad', '#f1c40f', '#e84393',
+            '#7f8c8d', '#34495e', '#2ecc71', '#f39c12', '#e67e22', '#1abc9c', '#3498db', '#9b59b6'
+        ];
+        
+        for (let idx = 0; idx < todasUFs.length; idx++) {
+            let uf = todasUFs[idx];
             let escolasUF = allSchools.filter(s => s.uf_sigla === uf);
             let respostasUF = filteredData.filter(r => ufToSigla(getUF(r)) === uf);
             let dados = radarIndicadores.map(ind => {
@@ -1020,14 +1023,40 @@
                 if (ind === 'Consulta (%)') return (escolasUF.filter(s => s.participacaoConsulta && (s.participacaoConsulta.toLowerCase().includes("concordo") || s.participacaoConsulta.toLowerCase().includes("sim"))).length / (escolasUF.length || 1) * 100);
                 return 0;
             });
-            datasets.push({ label: uf, data: dados, backgroundColor: `hsla(${Math.random() * 360}, 70%, 50%, 0.2)`, borderColor: `hsl(${Math.random() * 360}, 70%, 50%)` });
+            datasets.push({ 
+                label: uf, 
+                data: dados, 
+                backgroundColor: `hsla(${idx * 360 / todasUFs.length}, 70%, 50%, 0.2)`, 
+                borderColor: `hsl(${idx * 360 / todasUFs.length}, 70%, 50%)`,
+                pointBackgroundColor: `hsl(${idx * 360 / todasUFs.length}, 70%, 50%)`,
+                pointBorderColor: '#fff',
+                borderWidth: 2,
+                pointRadius: 3
+            });
         }
+        
         if (charts.chartRadar) charts.chartRadar.destroy();
         charts.chartRadar = new Chart(document.getElementById('chartRadar'), {
-            type: 'radar', data: { labels: radarIndicadores, datasets: datasets },
-            options: { scales: { r: { beginAtZero: true, max: 100 } }, plugins: { datalabels: { formatter: (v) => v.toFixed(0) + '%', font: { size: 8 } } } }
+            type: 'radar', 
+            data: { labels: radarIndicadores, datasets: datasets },
+            options: { 
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } },
+                plugins: { 
+                    datalabels: { 
+                        formatter: (v) => v.toFixed(0) + '%', 
+                        font: { size: 8 },
+                        backgroundColor: 'rgba(255,255,255,0.7)',
+                        borderRadius: 4,
+                        padding: { left: 2, right: 2 }
+                    },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%` } },
+                    legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } }
+                }
+            }
         });
-        document.querySelector('#chartRadar').parentElement.querySelector('.chart-note').innerText = 'Comparativo de indicadores por UF com dados disponíveis.';
+        document.querySelector('#chartRadar').parentElement.querySelector('.chart-note').innerHTML = `Radar comparativo de indicadores para ${todasUFs.length} Unidades Federativas (cores distintas).`;
     }
     
     function processTreemapPercent() {
@@ -1054,7 +1083,7 @@
         document.getElementById('modalTitle').innerText = `📊 ${title}`;
         let desc = '';
         if (chartId === 'chartCorrelation') desc = 'Cada ponto representa um estado. Quanto maior a oferta de Ensino Médio, menor tende a ser a evasão.';
-        else if (chartId === 'chartRadar') desc = 'Compara múltiplos indicadores para até 6 UFs com dados suficientes.';
+        else if (chartId === 'chartRadar') desc = 'Compara múltiplos indicadores para todas as UFs com dados disponíveis. Cores distintas por UF.';
         else if (chartId === 'chartTreemap') desc = 'Percentual calculado sobre o total de respostas (cada resposta pode citar vários motivos).';
         else desc = 'Gráfico gerado a partir dos dados filtrados da pesquisa. Os percentuais são calculados sobre o total de respostas ou escolas, conforme o indicador.';
         document.getElementById('modalText').innerHTML = desc;
@@ -1075,7 +1104,7 @@
         currentFilteredRows = filtered;
         let tbody = document.querySelector('#dadosTable tbody');
         if (!currentFilteredRows.length) { tbody.innerHTML = '<tr><td colspan="5">Nenhum registro com os filtros atuais.您</td></tr>'; return; }
-        let rows = currentFilteredRows.slice(0, 100).map(r => `<tr><td>${(getComunidade(r)||"Não informado").substring(0,65)}</td><td>${getUF(r)}</td><td>${getPerfil(r)}</td><td><small>${getRelato(r).substring(0,200)}</small></td><td><small>${getSugestoes(r).substring(0,200)}</small></td></tr>`).join('');
+        let rows = currentFilteredRows.slice(0, 100).map(r => `<tr><td>${(getComunidade(r)||"Não informado").substring(0,65)}</td><td>${getUF(r)}</td><td>${getPerfil(r)}</td><td><small>${getRelato(r).substring(0,200)}</small></td><td><small>${getSugestoes(r).substring(0,200)}</small></td>`).join('');
         tbody.innerHTML = rows;
     }
 
